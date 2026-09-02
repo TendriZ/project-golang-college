@@ -56,6 +56,4 @@ type ListQuery struct {
 	Sort 		string 
 	Order 		string 
 	IsActive 	*bool 
-	MinGrade	*float64
-	MaxGrade	*float64
 }
