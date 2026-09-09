@@ -3,26 +3,26 @@ package model
 import "time"
 
 type User struct {
-	ID 			int 		`json: "id"`
-	Username 	string 		`json: "username"`
-	Email 		string 		`json: "email"`
-	Password 	string 		`json: "-"`
-	IsActive 	bool 		`json: "is_active"`
-	CreatedAt 	time.Time 	`json: "created_at"`
+	ID 			int 		`json:"id"`
+	Username 	string 		`json:"username"`
+	Email 		string 		`json:"email"`
+	Password 	string 		`json:"-"`
+	IsActive 	bool 		`json:"is_active"`
+	CreatedAt 	time.Time 	`json:"created_at"`
 }
 
 //POST - semua field wajib katanya
 type CreateUserRequest struct {
-	Username	string 		`json: "username"`
-	Email		string 		`json: "email"`
-	Password	string 		`json: "password"`
+	Username	string 		`json:"username"`
+	Email		string 		`json:"email"`
+	Password	string 		`json:"password"`
 }
 
 //PUT - ganti seluruh isi, jadi field bertipe biasa dan semuanya wajib
 type ReplaceUserRequest struct {
-	Username 	string 		`json: "username"`	
-	Email 		string 		`json: "email"`	
-	IsActive 	bool 		`json: "is_active"`	
+	Username 	string 		`json:"username"`	
+	Email 		string 		`json:"email"`	
+	IsActive 	bool 		`json:"is_active"`	
 }
 
 //PATCH - ubah sebagian field, jadi field bertipe pointer supaya bisa dibedakan 
