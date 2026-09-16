@@ -12,23 +12,35 @@ import (
 	"latihan-fiber/middleware"
 )
 
-// Register memetakan URL ke method pada service.
-//
-// Perhatikan isi file ini: tidak ada logika bisnis, tidak ada query,
-// tidak ada validasi. Hanya daftar alamat dan siapa yang melayaninya.
-func Register(app *fiber.App, pool *pgxpool.Pool, userService *service.UserService) {
-	api := app.Group("/api/v1")
-
-	api.Get("/health", healthCheck(pool))
-
-	users := api.Group("/users", middleware.RequireJSON)
-	users.Get("/", userService.List)
-	users.Get("/:id", userService.Get)
-	users.Post("/", userService.Create)
-	users.Put("/:id", userService.Replace)
-	users.Patch("/:id", userService.Patch)
-	users.Delete("/:id", userService.Delete)
+type Dependencies struct {
+ Pool *pgxpool.Pool
+ JWT *helper.JWTManager
+ UserService *service.UserService
+ AuthService *service.AuthService
 }
+
+func Register(app *fiber.App, deps Dependencies) {
+ api := app.Group("/api/v1")
+ // --- publik ---
+ api.Get("/health", healthCheck(deps.Pool))
+ // --- autentikasi ---
+ auth := api.Group("/auth", middleware.RequireJSON)
+ auth.Post("/register", deps.AuthService.Register)
+ auth.Post("/login", middleware.LoginRateLimiter(), deps.AuthService.Login)
+ auth.Post("/refresh", deps.AuthService.Refresh)
+ auth.Post("/logout", deps.AuthService.Logout)
+ auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
+ // --- wajib membawa access token ---
+ users := api.Group("/users",
+ middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+ users.Get("/", deps.UserService.List)
+ users.Get("/:id", deps.UserService.Get)
+ users.Post("/", deps.UserService.Create)
+ users.Put("/:id", deps.UserService.Replace)
+ users.Patch("/:id", deps.UserService.Patch)
+ users.Delete("/:id", deps.UserService.Delete)
+}
+
 
 // healthCheck melaporkan kondisi layanan beserta databasenya.
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
@@ -52,3 +64,4 @@ func healthCheck(pool *pgxpool.Pool) fiber.Handler {
 		)
 	}
 }
+
