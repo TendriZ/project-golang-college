@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 
@@ -14,13 +15,27 @@ import (
 )
 
 // Register memasang seluruh middleware global
-func Register(app *fiber.App, logger *slog.Logger) {
+func Register(app *fiber.App, logger *slog.Logger, allowedOrigins string) {
 	app.Use(requestid.New())
 	app.Use(recover.New()) // Mencegah aplikasi mati jika terjadi panic
-	app.Use(cors.New())
+	app.Use(helmet.New())
+	app.Use(corsPolicy(allowedOrigins))
 
 	// Mencatat setiap request HTTP menggunakan logger buatan kita
 	app.Use(RequestLogger(logger))
+}
+
+// corsPolicy membatasi origin yang boleh memanggil API.
+// cors.New() tanpa konfigurasi mengizinkan SEMUA origin — tidak aman untuk API bertoken.
+func corsPolicy(allowedOrigins string) fiber.Handler {
+	if strings.TrimSpace(allowedOrigins) == "" {
+		allowedOrigins = "http://localhost:5173"
+	}
+	return cors.New(cors.Config{
+		AllowOrigins: allowedOrigins,
+		AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+	})
 }
 
 // RequestLogger mencatat detail setiap request (id, method, path, status, latency)
