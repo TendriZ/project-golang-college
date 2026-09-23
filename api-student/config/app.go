@@ -10,7 +10,6 @@ import (
 	"api-student/route"
 )
 
-
 // NewApp merakit aplikasi: membuat instance Fiber, memasang middleware, lalu mendaftarkan route.
 func NewApp(logger *slog.Logger, deps route.Dependencies) *fiber.App {
 	app := fiber.New(fiber.Config{

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"strings"
 	"api-student/app/model"
+	"strings"
 )
 
 // ValidateCreate memeriksa isian POST
@@ -40,7 +40,7 @@ func ValidateReplace(req model.ReplaceStudentRequest) map[string]string {
 // Field yang bernilai nil dibiarkan apa adanya
 func ApplyPatch(current model.Student, req model.PatchStudentRequest) (model.Student, map[string]string) {
 	errs := map[string]string{}
-	
+
 	if req.Name != nil {
 		if strings.TrimSpace(*req.Name) == "" {
 			errs["name"] = "tidak boleh kosong"
@@ -65,6 +65,6 @@ func ApplyPatch(current model.Student, req model.PatchStudentRequest) (model.Stu
 	if req.IsActive != nil {
 		current.IsActive = *req.IsActive
 	}
-	
+
 	return current, errs
 }

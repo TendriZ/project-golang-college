@@ -27,20 +27,20 @@ func ParamID(c *fiber.Ctx) (int, bool) {
 }
 
 var allowedSort = map[string]bool{
-	"id":       true,
-	"name":   	true,
-	"nim":      true,
-	"grade":	true,
+	"id":    true,
+	"name":  true,
+	"nim":   true,
+	"grade": true,
 }
 
 // ParseListQuery membaca query string dan memberi nilai bawaan yang aman.
 func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	q := model.ListQuery{
-		Page:    c.QueryInt("page", 1),
-		Limit:   c.QueryInt("limit", 10),
-		Search:  strings.TrimSpace(c.Query("search")),
-		Sort:    c.Query("sort", "id"),
-		Order:   strings.ToLower(c.Query("order", "asc")),
+		Page:   c.QueryInt("page", 1),
+		Limit:  c.QueryInt("limit", 10),
+		Search: strings.TrimSpace(c.Query("search")),
+		Sort:   c.Query("sort", "id"),
+		Order:  strings.ToLower(c.Query("order", "asc")),
 	}
 
 	if q.Page < 1 {
@@ -74,7 +74,7 @@ func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 			q.MinGrade = &v
 		}
 	}
-	
+
 	if raw := c.Query("max_grade"); raw != "" {
 		if v, err := strconv.ParseFloat(raw, 64); err == nil {
 			q.MaxGrade = &v
