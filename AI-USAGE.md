@@ -26,3 +26,21 @@
 - Verifikasi keamanan sesuai modul tetap dilakukan manual: cek `helper/security.go:12 bcryptCost=12`, `helper/jwt.go:56` cek `SigningMethodHMAC`, `middleware/auth.go:54` limiter, serta rencana `curl` Langkah 8 (register/login/refresh/429/alg none) dan `psql TRUNCATE` belum dieksekusi — perlu dijalankan manual sebelum pengumpulan.
 
 **Prompt inti:** "bisakah kamu membaca Modul 5 ... masih banyak error merah ... cek history command CLI"
+
+## TM 6
+**Tanggal:** 2026-09-23
+**Model/Alat:** muse-spark via opencode (agent Muse Spark)
+
+**Ruang lingkup bantuan:**
+1. Membaca `api-student/Modul 6- Authorization dan RBAC.pdf` dan audit kelengkapan C.1–C.2: C.1 (`migrations/003_student_permissions.sql`, roles/permissions/`owner_id`) sudah ada; C.2 belum ada sama sekali.
+2. Implementasi C.2 mengikuti pola `latihan-fiber`: `helper/authz.go` (PermissionSet fail-closed), `app/repository/role_repository.go` (LEFT JOIN agar role tanpa permission tetap dikenal), `middleware/authz.go` (RequirePermission + RequireRole pembanding), `app/service/student_authz_rules.go` (`CanAccessStudent` murni).
+3. Plumbing `owner_id`: `COALESCE(owner_id,0)` di SELECT (data lama NULL aman), INSERT pakai owner pemanggil, UPDATE sengaja tidak `SET owner_id`; `StudentService` tambah `perms` + cek ownership (`student:read:any` untuk GET, `student:update:any` untuk PUT/PATCH); `route` pasang `student:list/create/delete` di middleware; `main.go` load permission sekali + `os.Exit(1)` bila gagal; logger tambah `user_id`/`role`; `Me` balas `{user, permissions}`.
+4. Panduan laporan C.2 (5 bagian: image + penjelasan), skrip curl matriks C.3 + 2 pengujian negatif (N1 mass-assignment `owner_id`, N2 IDOR), dan draf jawaban analisis C.4.
+5. Percobaan menjalankan server gagal di mesin ini: WDAC/App Control memblokir semua binary Go hasil kompilasi (`go run`, `go build` + run, via PowerShell), dan WSL tidak mencapai Postgres (firewall). Pengujian curl C.3 harus dijalankan manual di mesin yang mengizinkan eksekusi.
+
+**Bagian yang dikerjakan manual & verifikasi:**
+- Verifikasi `go vet ./...` = 0, `go build ./...` = 0, `go fmt ./...` di `api-student`.
+- Isi DB dicek via `psql`: roles/permissions/`role_permissions` sesuai C.1, `owner_id` nullable + FK `ON DELETE SET NULL`.
+- Seluruh curl matriks + screenshot C.3 dan pengisian tabel dilakukan manual (belum dieksekusi saat penulisan ini).
+
+**Prompt inti:** "beralih ke api-student untuk Modul 6 ... cek kelengkapannya dulu" → "lanjut ke C.3" → "buatkan skrip curl" → "commit bertahap one by one ... sekalian push"
