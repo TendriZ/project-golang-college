@@ -20,6 +20,7 @@ type AuthService struct {
 	tokens     repository.TokenRepository
 	jwt        *helper.JWTManager
 	refreshTTL time.Duration
+	perms      *helper.PermissionSet
 }
 
 func NewAuthService(
@@ -27,8 +28,9 @@ func NewAuthService(
 	tokens repository.TokenRepository,
 	jwtManager *helper.JWTManager,
 	refreshTTL time.Duration,
+	perms *helper.PermissionSet,
 ) *AuthService {
-	return &AuthService{users: users, tokens: tokens, jwt: jwtManager, refreshTTL: refreshTTL}
+	return &AuthService{users: users, tokens: tokens, jwt: jwtManager, refreshTTL: refreshTTL, perms: perms}
 }
 
 func (s *AuthService) Register(c *fiber.Ctx) error {
@@ -172,7 +174,13 @@ func (s *AuthService) Me(c *fiber.Ctx) error {
 		return helper.Fail(c, fiber.StatusUnauthorized, "user tidak ditemukan")
 	}
 
-	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", user)
+	// Daftar permission hanya untuk kemudahan tampilan frontend
+	// (menyembunyikan tombol). Pengamanan sesungguhnya tetap di
+	// middleware dan service — bukan di sini.
+	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", fiber.Map{
+		"user":        user,
+		"permissions": s.perms.PermissionsOf(user.Role),
+	})
 }
 
 func (s *AuthService) issueTokenPair(ctx context.Context, user model.User) (model.TokenPair, error) {

@@ -3,15 +3,16 @@ package model
 import "time"
 
 type Student struct {
-	ID       int     `json:"id"`
-	NIM      int     `json:"nim"`
-	Name     string  `json:"name"`
-	Grade    float64 `json:"grade"`
-	IsActive bool    `json:"is_active"`
+	ID        int       `json:"id"`
+	NIM       int       `json:"nim"`
+	Name      string    `json:"name"`
+	Grade     float64   `json:"grade"`
+	IsActive  bool      `json:"is_active"`
+	OwnerID   int       `json:"owner_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// POST 
+// POST
 type CreateStudentRequest struct {
 	NIM   int     `json:"nim"`
 	Name  string  `json:"name"`
@@ -26,12 +27,12 @@ type ReplaceStudentRequest struct {
 	IsActive bool    `json:"is_active"`
 }
 
-// PATCH 
+// PATCH
 type PatchStudentRequest struct {
 	Name     *string  `json:"name,omitempty"`
 	NIM      *int     `json:"nim,omitempty"`
 	Grade    *float64 `json:"grade,omitempty"`
-	IsActive *bool  `json:"is_active,omitempty"`
+	IsActive *bool    `json:"is_active,omitempty"`
 }
 
 type WebResponse struct {
@@ -62,5 +63,5 @@ type ListQuery struct {
 
 // Offset menghitung berapa baris yang dilewati untuk halaman ini.
 func (q ListQuery) Offset() int {
-    return (q.Page - 1) * q.Limit
+	return (q.Page - 1) * q.Limit
 }
