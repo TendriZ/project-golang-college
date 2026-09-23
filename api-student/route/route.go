@@ -15,6 +15,7 @@ import (
 type Dependencies struct {
 	Pool           *pgxpool.Pool
 	JWT            *helper.JWTManager
+	Permissions    *helper.PermissionSet
 	StudentService *service.StudentService
 	AuthService    *service.AuthService
 }
@@ -34,15 +35,30 @@ func Register(app *fiber.App, deps Dependencies) {
 	// /auth/me wajib token — beda pesan expired vs invalid ditangani di RequireAuth
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
 
-	// Seluruh endpoint students wajib membawa access token (Tugas 3)
+	// Seluruh endpoint students wajib membawa access token.
+	// Hak yang dapat diputuskan tanpa melihat data -> middleware.
+	// Hak yang bergantung pada kepemilikan data (owner_id) -> di service.
 	students := api.Group("/students",
 		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
-	students.Get("/", deps.StudentService.List)
+
+	perms := deps.Permissions
+
+	// Hak dapat diputuskan tanpa melihat data -> middleware.
+	students.Get("/",
+		middleware.RequirePermission(perms, "student:list"),
+		deps.StudentService.List)
+	students.Post("/",
+		middleware.RequirePermission(perms, "student:create"),
+		deps.StudentService.Create)
+	students.Delete("/:id",
+		middleware.RequirePermission(perms, "student:delete"),
+		deps.StudentService.Delete)
+
+	// Hak bergantung pada kepemilikan data -> diperiksa di service
+	// (pemilik selalu boleh; selain itu perlu permission :any).
 	students.Get("/:id", deps.StudentService.Get)
-	students.Post("/", deps.StudentService.Create)
 	students.Put("/:id", deps.StudentService.Replace)
 	students.Patch("/:id", deps.StudentService.Patch)
-	students.Delete("/:id", deps.StudentService.Delete)
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
