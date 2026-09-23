@@ -17,11 +17,11 @@ func NewApp(
 	deps route.Dependencies,
 ) *fiber.App {
 	app := fiber.New(fiber.Config{
- 	AppName: GetEnv("APP_NAME", "Praktikum Backend Lanjut"),
-	ErrorHandler: newErrorHandler(logger),
-	// Membatasi ukuran body mencegah satu request besar menghabiskan
-	// memori server (denial of service yang paling murah dilakukan).
-	BodyLimit: 1 * 1024 * 1024, // 1 MB
+		AppName:      GetEnv("APP_NAME", "Praktikum Backend Lanjut"),
+		ErrorHandler: newErrorHandler(logger),
+		// Membatasi ukuran body mencegah satu request besar menghabiskan
+		// memori server (denial of service yang paling murah dilakukan).
+		BodyLimit: 1 * 1024 * 1024, // 1 MB
 	})
 	middleware.Register(app, logger, GetEnv("ALLOWED_ORIGINS", ""))
 	route.Register(app, deps)

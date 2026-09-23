@@ -18,14 +18,14 @@ import (
 // cors.New() tanpa konfigurasi mengizinkan SEMUA origin — cukup untuk
 // latihan pertemuan 2, tetapi tidak untuk API yang memakai token.
 func corsPolicy(allowedOrigins string) fiber.Handler {
- if strings.TrimSpace(allowedOrigins) == "" {
- allowedOrigins = "http://localhost:5173"
- }
- return cors.New(cors.Config{
- AllowOrigins: allowedOrigins,
- AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
- AllowHeaders: "Origin,Content-Type,Accept,Authorization",
- })
+	if strings.TrimSpace(allowedOrigins) == "" {
+		allowedOrigins = "http://localhost:5173"
+	}
+	return cors.New(cors.Config{
+		AllowOrigins: allowedOrigins,
+		AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+	})
 }
 
 // Register memasang seluruh middleware yang berlaku untuk semua route.
@@ -37,7 +37,6 @@ func Register(app *fiber.App, logger *slog.Logger, allowedOrigins string) {
 	app.Use(corsPolicy(allowedOrigins)) // BERUBAH: tidak lagi cors.New()
 	app.Use(RequestLogger(logger))
 }
-
 
 // RequestLogger mencatat setiap request ke log terstruktur.
 // Perhatikan polanya: fungsi yang MENGEMBALIKAN fungsi (closure) —

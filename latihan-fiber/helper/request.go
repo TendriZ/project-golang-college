@@ -36,11 +36,11 @@ var allowedSort = map[string]bool{
 // ParseListQuery membaca query string dan memberi nilai bawaan yang aman.
 func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	q := model.ListQuery{
-		Page:    c.QueryInt("page", 1),
-		Limit:   c.QueryInt("limit", 10),
-		Search:  strings.TrimSpace(c.Query("search")),
-		Sort:    c.Query("sort", "id"),
-		Order:   strings.ToLower(c.Query("order", "asc")),
+		Page:   c.QueryInt("page", 1),
+		Limit:  c.QueryInt("limit", 10),
+		Search: strings.TrimSpace(c.Query("search")),
+		Sort:   c.Query("sort", "id"),
+		Order:  strings.ToLower(c.Query("order", "asc")),
 	}
 
 	if q.Page < 1 {

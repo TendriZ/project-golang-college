@@ -20,9 +20,9 @@ func NewLogger() *slog.Logger {
 
 	rotator := &lumberjack.Logger{
 		Filename:   filepath.Join("logs", "app.log"),
-		MaxSize:    10,   // rotasi setiap file mencapai 10 MB
-		MaxBackups: 5,    // simpan 5 file lama
-		MaxAge:     14,   // hapus file yang lebih tua dari 14 hari
+		MaxSize:    10, // rotasi setiap file mencapai 10 MB
+		MaxBackups: 5,  // simpan 5 file lama
+		MaxAge:     14, // hapus file yang lebih tua dari 14 hari
 		Compress:   true,
 	}
 
