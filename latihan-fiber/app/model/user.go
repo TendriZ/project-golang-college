@@ -59,6 +59,11 @@ type ListQuery struct {
 	IsActive *bool
 }
 
+// AssignRoleRequest dipakai endpoint PATCH /users/:id/role.
+type AssignRoleRequest struct {
+	Role string `json:"role"`
+}
+
 // Offset menghitung berapa baris yang dilewati untuk halaman ini.
 // Perhitungan ini pindah ke sini karena kini dipakai langsung oleh SQL.
 func (q ListQuery) Offset() int {

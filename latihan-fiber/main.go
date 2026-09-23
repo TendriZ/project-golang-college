@@ -57,14 +57,16 @@ func main() {
 	permissions := helper.NewPermissionSet(rawPermissions)
 	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
-	userService := service.NewUserService(userRepository)
+	userService := service.NewUserService(userRepository, permissions)
 	authService := service.NewAuthService(
 		userRepository, tokenRepository, jwtManager,
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
+		permissions,
 	)
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:        pool,
 		JWT:         jwtManager,
+		Permissions: permissions,
 		UserService: userService,
 		AuthService: authService,
 	})

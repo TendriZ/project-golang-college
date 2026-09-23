@@ -15,14 +15,17 @@ import (
 type Dependencies struct {
 	Pool        *pgxpool.Pool
 	JWT         *helper.JWTManager
+	Permissions *helper.PermissionSet
 	UserService *service.UserService
 	AuthService *service.AuthService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
+
 	// --- publik ---
 	api.Get("/health", healthCheck(deps.Pool))
+
 	// --- autentikasi ---
 	auth := api.Group("/auth", middleware.RequireJSON)
 	auth.Post("/register", deps.AuthService.Register)
@@ -30,15 +33,32 @@ func Register(app *fiber.App, deps Dependencies) {
 	auth.Post("/refresh", deps.AuthService.Refresh)
 	auth.Post("/logout", deps.AuthService.Logout)
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
+
 	// --- wajib membawa access token ---
 	users := api.Group("/users",
-		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
-	users.Get("/", deps.UserService.List)
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+
+	perms := deps.Permissions
+
+	// Hak dapat diputuskan tanpa melihat data -> middleware.
+	users.Get("/",
+		middleware.RequirePermission(perms, "user:list"),
+		deps.UserService.List)
+	users.Post("/",
+		middleware.RequirePermission(perms, "user:create"),
+		deps.UserService.Create)
+	users.Delete("/:id",
+		middleware.RequirePermission(perms, "user:delete"),
+		deps.UserService.Delete)
+	users.Patch("/:id/role",
+		middleware.RequirePermission(perms, "role:assign"),
+		deps.UserService.AssignRole)
+
+	// Hak bergantung pada kepemilikan data -> diperiksa di service.
 	users.Get("/:id", deps.UserService.Get)
-	users.Post("/", deps.UserService.Create)
 	users.Put("/:id", deps.UserService.Replace)
 	users.Patch("/:id", deps.UserService.Patch)
-	users.Delete("/:id", deps.UserService.Delete)
 }
 
 // healthCheck melaporkan kondisi layanan beserta databasenya.

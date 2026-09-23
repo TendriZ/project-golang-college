@@ -21,6 +21,7 @@ type AuthService struct {
 	tokens     repository.TokenRepository
 	jwt        *helper.JWTManager
 	refreshTTL time.Duration
+	perms      *helper.PermissionSet
 }
 
 func NewAuthService(
@@ -28,9 +29,10 @@ func NewAuthService(
 	tokens repository.TokenRepository,
 	jwtManager *helper.JWTManager,
 	refreshTTL time.Duration,
+	perms *helper.PermissionSet,
 ) *AuthService {
 	return &AuthService{
-		users: users, tokens: tokens, jwt: jwtManager, refreshTTL: refreshTTL,
+		users: users, tokens: tokens, jwt: jwtManager, refreshTTL: refreshTTL, perms: perms,
 	}
 }
 func (s *AuthService) Register(c *fiber.Ctx) error {
@@ -157,7 +159,10 @@ func (s *AuthService) Me(c *fiber.Ctx) error {
 	if err != nil {
 		return helper.Fail(c, fiber.StatusUnauthorized, "user tidak ditemukan")
 	}
-	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", user)
+	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", fiber.Map{
+		"user":        user,
+		"permissions": s.perms.PermissionsOf(user.Role),
+	})
 }
 
 // issueTokenPair membuat access token dan refresh token sekaligus.
