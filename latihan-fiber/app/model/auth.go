@@ -3,9 +3,10 @@ package model
 import "time"
 
 type RegisterRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required,min=3,max=30,username"`
+	Email string `json:"email" validate:"required,email,max=120"`
+	Password string `json:"password" validate:"required,max=72,strongpassword"`
+
 	// Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
 	// dapat mendaftar sebagai admin (kerentanan mass assignment).
 }
@@ -41,3 +42,6 @@ type AuthUser struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
 }
+
+
+

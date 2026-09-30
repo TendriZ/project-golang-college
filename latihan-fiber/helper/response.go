@@ -23,6 +23,19 @@ func SuccessList(c *fiber.Ctx, message string, data any, meta *model.Meta) error
 	})
 }
 
+// SuccessCursor mengirim daftar berbasis cursor. Metanya memakai
+// CursorMeta (limit, next_cursor, has_more) — tanpa Total dan TotalPages,
+// karena keduanya menuntut COUNT(*) atas seluruh tabel, persis biaya yang
+// ingin dihindari keyset pagination.
+func SuccessCursor(c *fiber.Ctx, message string, data any, meta *model.CursorMeta) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": message,
+		"data":    data,
+		"meta":    meta,
+	})
+}
+
 // Created mengirim 201 sekaligus memasang header Location.
 func Created(c *fiber.Ctx, message string, data any, location string) error {
 	c.Set("Location", location)
@@ -36,19 +49,4 @@ func Created(c *fiber.Ctx, message string, data any, location string) error {
 
 func NoContent(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func Fail(c *fiber.Ctx, status int, message string) error {
-	return c.Status(status).JSON(model.WebResponse{
-		Success: false,
-		Message: message,
-	})
-}
-
-func FailValidation(c *fiber.Ctx, errs map[string]string) error {
-	return c.Status(fiber.StatusUnprocessableEntity).JSON(model.WebResponse{
-		Success: false,
-		Message: "validasi gagal",
-		Errors:  errs,
-	})
 }

@@ -71,3 +71,43 @@ func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 
 	return q
 }
+
+// ParseCursorQuery membaca query string untuk pagination berbasis cursor.
+// Cursor rusak atau is_active yang bukan boolean adalah kesalahan pemakai
+// API (400), bukan nilai yang diam-diam diperbaiki — client berhak tahu
+// lewat status, bukan dikembalikan ke halaman pertama seolah tidak terjadi
+// apa-apa.
+func ParseCursorQuery(c *fiber.Ctx) (model.CursorQuery, error) {
+	q := model.CursorQuery{
+		Limit:  c.QueryInt("limit", 10),
+		Search: strings.TrimSpace(c.Query("search")),
+	}
+
+	if q.Limit < 1 {
+		q.Limit = 10
+	}
+
+	if q.Limit > 100 {
+		q.Limit = 100
+	}
+
+	if raw := c.Query("is_active"); raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			return model.CursorQuery{}, BadRequest("is_active harus berupa boolean")
+		}
+
+		q.IsActive = &v
+	}
+
+	if raw := strings.TrimSpace(c.Query("cursor")); raw != "" {
+		cursor, err := DecodeCursor(raw)
+		if err != nil {
+			return model.CursorQuery{}, BadRequest("cursor tidak valid")
+		}
+
+		q.After = &cursor
+	}
+
+	return q, nil
+}
