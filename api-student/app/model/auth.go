@@ -3,11 +3,16 @@ package model
 import "time"
 
 type RegisterRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required,min=3,max=30,username"`
+	Email    string `json:"email" validate:"required,email,max=120"`
+	Password string `json:"password" validate:"required,max=72,strongpassword"`
 	// TIDAK ADA field Role — mencegah mass assignment ("role":"admin" dari client)
 }
+
+// Perhatikan max=72 pada password. Angka itu bukan pilihan bebas: bcrypt
+// hanya memproses 72 byte pertama dan MENGABAIKAN sisanya tanpa peringatan.
+// Tanpa batas ini, dua password berbeda yang sama pada 72 byte pertama
+// akan dianggap identik saat login.
 
 type LoginRequest struct {
 	Username string `json:"username"`
