@@ -44,3 +44,25 @@
 - Seluruh curl matriks + screenshot C.3 dan pengisian tabel dilakukan manual (belum dieksekusi saat penulisan ini).
 
 **Prompt inti:** "beralih ke api-student untuk Modul 6 ... cek kelengkapannya dulu" → "lanjut ke C.3" → "buatkan skrip curl" → "commit bertahap one by one ... sekalian push"
+
+## TM 7
+**Tanggal:** 2026-09-30
+**Model/Alat:** muse-spark via opencode (agent Muse Spark)
+
+**Ruang lingkup bantuan (latihan-fiber, Langkah Panduan):**
+1. Diagnosis merah di `user_service.go`: package `helper` + `service` gagal kompilasi (IDE menandai semua file). Akar: `helper/negotiate.go` tanpa baris `package`, `List` setengah migrasi (`q` undefined), `ParseCursorQuery`/`SuccessCursor`/entri interface `FindAfterCursor` belum ada, test `ApplyPatch` 2 nilai.
+2. Perbaikan compiler satu per satu (tulis `ParseCursorQuery` dengan 400 untuk cursor/is_active salah, `SuccessCursor`, entri interface, tulis ulang `List`, rampingkan test) sampai `go build` + `go vet` nol.
+3. Lima bug perilaku: `Validation()` 400→422 (`errors.go`), `ORDER BY id ASC`→DESC (duplikat cursor), PATCH id-rusak 401→400, level log 4xx/5xx tertukar (`config/app.go`), `healthCheck` `Fail`→`ServiceUnavailable` + hapus `Fail`/`FailValidation`; bonus: `Patch` kehilangan panggilan `ValidateStruct` (ketemu dari uji curl user, `{"username":""}` lolos 200) — ditambah + data `c7admin` diperbaiki via psql.
+4. Verifikasi klaim 9-bug user: hanya #4 + varian #9 yang benar ada; #1,2,3,5,6,7,8 tidak pernah ada di repo dalam bentuk itu (dicek ke disk + git) — dilaporkan apa adanya agar Berita Acara D.1 jujur.
+5. Pasang `Negotiate`/CSV di `List` (Langkah 8) + skrip verifikasi C 9.1–9.7, C.8 (14 baris dipetakan ke 9.x + 3 tambahan), akun `c7admin`/`d2admin` + seed via psql/curl.
+
+**Ruang lingkup bantuan (api-student, Tugas Mandiri D.2–D.5):**
+1. Porting penuh pola latihan-fiber: `errors.go` (422), `validator.go` + custom `nodigit`, `cursor.go`, `negotiate.go` + `WriteStudentsCSV`, tag model + `CursorMeta/Query`, `ParseCursorQuery` (pertahankan filter grade), `FindAfterCursor` + migrasi `004_cursor_student_index.sql` (di-apply ke `db_students`), konversi service/middleware/config/route ke AppError + hapus `Fail`, tulis ulang kedua test.
+2. Panduan laporan D.2/D.3/D.4 (screenshot + teks), jawaban D.5, akun `d2admin` via `pgcrypto` + baris target PATCH, bukti EXPLAIN ANALYZE via psql langsung.
+
+**Bagian yang dikerjakan manual & verifikasi:**
+- `go build` + `go vet` nol di kedua project (dijalankan di sini). `go test` hanya terkompilasi (AppLocker memblokir eksekusi binary di mesin ini).
+- Seluruh curl (9.x, matriks, CSV, EXPLAIN sudah diambil via psql) + screenshot + tabel D.1/D.4.3 dikerjakan user di mesin yang bisa `go run`.
+- Penulisan Berita Acara D.1, laporan Tugas7, dan keputusan akhir isi laporan tetap milik user.
+
+**Prompt inti:** "baca Modul-7.md ... user_service.go merah, pahami dulu" → "lanjutkan tahap berikutnya" → verifikasi 9-bug → "lanjut ke Spesifikasi Penerimaan" → "kenapa tidak ada curl login" → akun baru → PATCH 200 → C.8 checklist → "kerjakan TM api-student" → D.2/D.3/D.4/D.5 → "commit bertahap ... push"
