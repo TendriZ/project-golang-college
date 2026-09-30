@@ -1,70 +1,39 @@
 package service
 
 import (
-	"api-student/app/model"
 	"strings"
+
+	"api-student/app/model"
 )
 
-// ValidateCreate memeriksa isian POST
-func ValidateCreate(req model.CreateStudentRequest) map[string]string {
-	errs := map[string]string{}
-	if strings.TrimSpace(req.Name) == "" {
-		errs["name"] = "nama wajib diisi"
-	}
-	if req.NIM <= 0 {
-		errs["nim"] = "nim wajib diisi dan berupa angka positif"
-	}
-	if req.Grade < 0 || req.Grade > 100 {
-		errs["grade"] = "grade harus di antara 0 dan 100"
-	}
-	return errs
-}
-
-// ValidateReplace memeriksa isian PUT
-// Seluruh field wajib ada karena PUT mengganti isi secara keseluruhan
-func ValidateReplace(req model.ReplaceStudentRequest) map[string]string {
-	errs := map[string]string{}
-	if strings.TrimSpace(req.Name) == "" {
-		errs["name"] = "nama wajib diisi pada PUT"
-	}
-	if req.NIM <= 0 {
-		errs["nim"] = "nim wajib diisi pada PUT"
-	}
-	if req.Grade < 0 || req.Grade > 100 {
-		errs["grade"] = "grade harus di antara 0 dan 100"
-	}
-	return errs
-}
-
-// ApplyPatch menyalin field yang dikirim ke data yang sudah ada
-// Field yang bernilai nil dibiarkan apa adanya
-func ApplyPatch(current model.Student, req model.PatchStudentRequest) (model.Student, map[string]string) {
-	errs := map[string]string{}
-
+// ApplyPatch tidak lagi mengembalikan daftar error. Pemeriksaan bentuk
+// sudah selesai dikerjakan tag sebelum fungsi ini dipanggil, sehingga di
+// sini tugasnya tinggal satu: menggabungkan.
+func ApplyPatch(current model.Student, req model.PatchStudentRequest) model.Student {
 	if req.Name != nil {
-		if strings.TrimSpace(*req.Name) == "" {
-			errs["name"] = "tidak boleh kosong"
-		} else {
-			current.Name = *req.Name
-		}
+		current.Name = strings.TrimSpace(*req.Name)
 	}
 	if req.NIM != nil {
-		if *req.NIM <= 0 {
-			errs["nim"] = "harus berupa angka positif"
-		} else {
-			current.NIM = *req.NIM
-		}
+		current.NIM = *req.NIM
 	}
 	if req.Grade != nil {
-		if *req.Grade < 0 || *req.Grade > 100 {
-			errs["grade"] = "harus di antara 0 dan 100"
-		} else {
-			current.Grade = *req.Grade
-		}
+		current.Grade = *req.Grade
 	}
 	if req.IsActive != nil {
 		current.IsActive = *req.IsActive
 	}
 
-	return current, errs
+	return current
+}
+
+// IsEmptyPatch memeriksa body PATCH yang tidak berisi field apa pun.
+//
+// Aturan ini tidak dapat ditulis sebagai tag: tag memeriksa satu field
+// pada satu waktu, sedangkan aturan ini berbicara tentang HUBUNGAN antar
+// field — setidaknya satu di antara mereka harus ada.
+func IsEmptyPatch(req model.PatchStudentRequest) bool {
+	return req.Name == nil &&
+		req.NIM == nil &&
+		req.Grade == nil &&
+		req.IsActive == nil
 }

@@ -17,8 +17,11 @@ var (
 	ErrDuplicate = errors.New("data sudah ada")
 )
 
+const studentColumns = "id, nim, name, grade, is_active, COALESCE(owner_id, 0), created_at"
+
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
+	FindAfterCursor(ctx context.Context, q model.CursorQuery) ([]model.Student, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
 	Update(ctx context.Context, s model.Student) (model.Student, error)
@@ -157,6 +160,103 @@ func (r *studentPostgresRepository) Update(ctx context.Context, s model.Student)
 		return model.Student{}, fmt.Errorf("memperbarui student: %w", err)
 	}
 	return s, nil
+}
+
+// FindAfterCursor mengambil satu halaman memakai keyset pagination.
+//
+// id ikut dibandingkan karena created_at TIDAK dijamin unik. Bila dua
+// baris dibuat pada mikrodetik yang sama dan hanya created_at yang
+// dibandingkan, salah satu baris akan terlewat atau terkirim dua kali.
+//
+// Jumlah yang diminta sengaja limit+1. Baris tambahan itu tidak dikirim
+// ke client; keberadaannya hanya dipakai untuk menjawab "masih ada
+// halaman berikutnya?" tanpa perlu COUNT(*) atas seluruh tabel.
+//
+// Pasangan pengurutan (created_at DESC, id DESC) inilah jawaban D.3.1:
+// created_at menambatkan urutan waktu (terbaru dulu), id yang pasti unik
+// menjadi pemecah seri sehingga tidak ada dua baris yang menempati
+// posisi cursor yang sama.
+func (r *studentPostgresRepository) FindAfterCursor(
+	ctx context.Context,
+	q model.CursorQuery,
+) ([]model.Student, error) {
+	args := []any{}
+	where := " WHERE 1 = 1"
+
+	if q.Search != "" {
+		args = append(args, "%"+q.Search+"%")
+		where += fmt.Sprintf(" AND name ILIKE $%d", len(args))
+	}
+
+	if q.IsActive != nil {
+		args = append(args, *q.IsActive)
+		where += fmt.Sprintf(" AND is_active = $%d", len(args))
+	}
+
+	if q.MinGrade != nil {
+		args = append(args, *q.MinGrade)
+		where += fmt.Sprintf(" AND grade >= $%d", len(args))
+	}
+
+	if q.MaxGrade != nil {
+		args = append(args, *q.MaxGrade)
+		where += fmt.Sprintf(" AND grade <= $%d", len(args))
+	}
+
+	if q.After != nil {
+		args = append(args, q.After.CreatedAt, q.After.ID)
+		where += fmt.Sprintf(
+			" AND (created_at, id) < ($%d, $%d)",
+			len(args)-1,
+			len(args),
+		)
+	}
+
+	args = append(args, q.Limit+1)
+
+	query := fmt.Sprintf(
+		"SELECT %s FROM students%s ORDER BY created_at DESC, id DESC LIMIT $%d",
+		studentColumns,
+		where,
+		len(args),
+	)
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil daftar student: %w", err)
+	}
+	defer rows.Close()
+
+	result := []model.Student{}
+
+	for rows.Next() {
+		u, err := scanStudent(rows)
+		if err != nil {
+			return nil, fmt.Errorf("membaca row student: %w", err)
+		}
+
+		result = append(result, u)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("membaca hasil query student: %w", err)
+	}
+
+	return result, nil
+}
+
+func scanStudent(row pgx.Row) (model.Student, error) {
+	var s model.Student
+	err := row.Scan(
+		&s.ID,
+		&s.NIM,
+		&s.Name,
+		&s.Grade,
+		&s.IsActive,
+		&s.OwnerID,
+		&s.CreatedAt,
+	)
+	return s, err
 }
 
 func (r *studentPostgresRepository) Delete(ctx context.Context, id int) error {
