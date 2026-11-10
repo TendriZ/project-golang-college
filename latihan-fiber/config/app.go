@@ -6,10 +6,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"latihan-fiber/app/model"
 	"latihan-fiber/helper"
 	"latihan-fiber/middleware"
 	"latihan-fiber/route"
-	"latihan-fiber/app/model"
 )
 
 // NewApp merakit aplikasi: membuat instance Fiber, memasang middleware,
@@ -31,7 +31,7 @@ func NewApp(
 	// Penampung terakhir untuk URL yang tidak dikenal.
 	app.Use(func(c *fiber.Ctx) error {
 		return helper.NotFound("endpoint tidak ditemukan")
-	})	
+	})
 
 	return app
 }
@@ -75,14 +75,6 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 		// sistem; mencatatnya sebagai Error membuat log penuh bising
 		// sehingga kerusakan yang sesungguhnya justru tenggelam.
 		if appErr.Status >= fiber.StatusInternalServerError {
-			logger.Warn(
-				"request_rejected",
-				slog.String("request_id", requestID),
-				slog.String("path", c.Path()),
-				slog.String("code", appErr.Code),
-				slog.Int("status", appErr.Status),
-			)
-		} else {
 			logger.Error(
 				"request_failed",
 				slog.String("request_id", requestID),
@@ -90,6 +82,14 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 				slog.String("code", appErr.Code),
 				slog.Int("status", appErr.Status),
 				slog.String("error", appErr.Error()),
+			)
+		} else {
+			logger.Warn(
+				"request_rejected",
+				slog.String("request_id", requestID),
+				slog.String("path", c.Path()),
+				slog.String("code", appErr.Code),
+				slog.Int("status", appErr.Status),
 			)
 		}
 
@@ -102,5 +102,3 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 		})
 	}
 }
-
-
