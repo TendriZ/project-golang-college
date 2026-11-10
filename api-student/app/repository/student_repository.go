@@ -7,7 +7,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"api-student/app/model"
 )
@@ -20,9 +19,14 @@ var (
 const studentColumns = "id, nim, name, grade, is_active, COALESCE(owner_id, 0), created_at"
 
 type StudentRepository interface {
+	// WithTx mengembalikan salinan repository yang menjalankan seluruh
+	// query-nya di dalam transaction tx.
+	WithTx(tx DBTX) StudentRepository
+
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
 	FindAfterCursor(ctx context.Context, q model.CursorQuery) ([]model.Student, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
+	LockByID(ctx context.Context, id int) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
 	Update(ctx context.Context, s model.Student) (model.Student, error)
 	Delete(ctx context.Context, id int) error
@@ -36,11 +40,18 @@ var kolomUrut = map[string]string{
 }
 
 type studentPostgresRepository struct {
-	pool *pgxpool.Pool
+	db DBTX
 }
 
-func NewStudentRepository(pool *pgxpool.Pool) StudentRepository {
-	return &studentPostgresRepository{pool: pool}
+// NewStudentRepository menerima DBTX. Pada main.go yang dikirim adalah
+// pool, sehingga repository ini bekerja di luar transaction sampai
+// WithTx dipanggil.
+func NewStudentRepository(db DBTX) StudentRepository {
+	return &studentPostgresRepository{db: db}
+}
+
+func (r *studentPostgresRepository) WithTx(tx DBTX) StudentRepository {
+	return &studentPostgresRepository{db: tx}
 }
 
 func buildFilter(q model.ListQuery) (string, []any) {
@@ -70,7 +81,7 @@ func (r *studentPostgresRepository) FindAll(ctx context.Context, q model.ListQue
 	where, args := buildFilter(q)
 
 	var total int
-	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM students"+where, args...).Scan(&total)
+	err := r.db.QueryRow(ctx, "SELECT COUNT(*) FROM students"+where, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("menghitung student: %w", err)
 	}
@@ -89,7 +100,7 @@ func (r *studentPostgresRepository) FindAll(ctx context.Context, q model.ListQue
 	)
 	args = append(args, q.Limit, q.Offset())
 
-	rows, err := r.pool.Query(ctx, sqlText, args...)
+	rows, err := r.db.Query(ctx, sqlText, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("mengambil daftar student: %w", err)
 	}
@@ -111,7 +122,7 @@ func (r *studentPostgresRepository) FindAll(ctx context.Context, q model.ListQue
 
 func (r *studentPostgresRepository) FindByID(ctx context.Context, id int) (model.Student, error) {
 	var s model.Student
-	err := r.pool.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`SELECT id, nim, name, grade, is_active, COALESCE(owner_id, 0), created_at
 		 FROM students WHERE id = $1`, id,
 	).Scan(&s.ID, &s.NIM, &s.Name, &s.Grade, &s.IsActive, &s.OwnerID, &s.CreatedAt)
@@ -125,8 +136,33 @@ func (r *studentPostgresRepository) FindByID(ctx context.Context, id int) (model
 	return s, nil
 }
 
+// LockByID mengunci row milik satu mahasiswa sampai transaction selesai.
+//
+// Row students dipakai sebagai "gembok pembimbing": selama satu transaction
+// memegang kunci ini, transaction lain untuk mahasiswa YANG SAMA harus
+// antre. Inilah yang membuat pemeriksaan "sudah punya pembimbing?" dan
+// penulisan supervisions tidak dapat disela request lain.
+//
+// Tanpa FOR UPDATE, SELECT ini tidak mengunci apa pun. Dua request untuk
+// mahasiswa yang sama dapat sama-sama melihat "belum punya pembimbing",
+// lalu keduanya mencoba menulis. UNIQUE (student_id) memang menolak yang
+// kedua, tetapi request itu sudah terlanjur mengambil kuota pembimbing
+// sebelum akhirnya rollback.
+func (r *studentPostgresRepository) LockByID(ctx context.Context, id int) (model.Student, error) {
+	s, err := scanStudent(r.db.QueryRow(ctx,
+		`SELECT id, nim, name, grade, is_active, COALESCE(owner_id, 0), created_at
+		 FROM students WHERE id = $1 FOR UPDATE`, id))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.Student{}, ErrNotFound
+		}
+		return model.Student{}, fmt.Errorf("mengunci student: %w", err)
+	}
+	return s, nil
+}
+
 func (r *studentPostgresRepository) Create(ctx context.Context, s model.Student) (model.Student, error) {
-	err := r.pool.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`INSERT INTO students (nim, name, grade, is_active, owner_id)
 		 VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id, owner_id, created_at`,
@@ -143,7 +179,7 @@ func (r *studentPostgresRepository) Create(ctx context.Context, s model.Student)
 }
 
 func (r *studentPostgresRepository) Update(ctx context.Context, s model.Student) (model.Student, error) {
-	err := r.pool.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`UPDATE students SET nim = $1, name = $2, grade = $3, is_active = $4
 		 WHERE id = $5
 		 RETURNING id, nim, name, grade, is_active, COALESCE(owner_id, 0), created_at`,
@@ -221,7 +257,7 @@ func (r *studentPostgresRepository) FindAfterCursor(
 		len(args),
 	)
 
-	rows, err := r.pool.Query(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("mengambil daftar student: %w", err)
 	}
@@ -260,7 +296,7 @@ func scanStudent(row pgx.Row) (model.Student, error) {
 }
 
 func (r *studentPostgresRepository) Delete(ctx context.Context, id int) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM students WHERE id = $1`, id)
+	tag, err := r.db.Exec(ctx, `DELETE FROM students WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("menghapus student: %w", err)
 	}

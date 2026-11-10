@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"api-student/app/model"
 )
 
 type TokenRepository interface {
+	WithTx(tx DBTX) TokenRepository
+
 	Save(ctx context.Context, t model.RefreshToken) error
 	FindActive(ctx context.Context, tokenHash string) (model.RefreshToken, error)
 	Revoke(ctx context.Context, tokenHash string) error
@@ -19,15 +20,19 @@ type TokenRepository interface {
 }
 
 type tokenPostgresRepository struct {
-	pool *pgxpool.Pool
+	db DBTX
 }
 
-func NewTokenRepository(pool *pgxpool.Pool) TokenRepository {
-	return &tokenPostgresRepository{pool: pool}
+func NewTokenRepository(db DBTX) TokenRepository {
+	return &tokenPostgresRepository{db: db}
+}
+
+func (r *tokenPostgresRepository) WithTx(tx DBTX) TokenRepository {
+	return &tokenPostgresRepository{db: tx}
 }
 
 func (r *tokenPostgresRepository) Save(ctx context.Context, t model.RefreshToken) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.db.Exec(ctx,
 		`INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
 		 VALUES ($1, $2, $3)`,
 		t.UserID, t.TokenHash, t.ExpiresAt,
@@ -42,7 +47,7 @@ func (r *tokenPostgresRepository) FindActive(
 	ctx context.Context, tokenHash string,
 ) (model.RefreshToken, error) {
 	var t model.RefreshToken
-	err := r.pool.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`SELECT id, user_id, token_hash, expires_at, revoked_at, created_at
 		 FROM refresh_tokens
 		 WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > NOW()`,
@@ -58,7 +63,7 @@ func (r *tokenPostgresRepository) FindActive(
 }
 
 func (r *tokenPostgresRepository) Revoke(ctx context.Context, tokenHash string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.db.Exec(ctx,
 		`UPDATE refresh_tokens SET revoked_at = NOW()
 		 WHERE token_hash = $1 AND revoked_at IS NULL`, tokenHash,
 	)
@@ -71,7 +76,7 @@ func (r *tokenPostgresRepository) Revoke(ctx context.Context, tokenHash string) 
 func (r *tokenPostgresRepository) RevokeAllForUser(
 	ctx context.Context, userID int,
 ) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.db.Exec(ctx,
 		`UPDATE refresh_tokens SET revoked_at = NOW()
 		 WHERE user_id = $1 AND revoked_at IS NULL`, userID,
 	)

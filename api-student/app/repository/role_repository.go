@@ -3,19 +3,22 @@ package repository
 import (
 	"context"
 	"fmt"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // RoleRepository membaca pemetaan role ke permission dari database.
 type RoleRepository interface {
+	WithTx(tx DBTX) RoleRepository
 	LoadPermissions(ctx context.Context) (map[string][]string, error)
 }
 
-type rolePostgresRepository struct{ pool *pgxpool.Pool }
+type rolePostgresRepository struct{ db DBTX }
 
-func NewRoleRepository(pool *pgxpool.Pool) RoleRepository {
-	return &rolePostgresRepository{pool: pool}
+func NewRoleRepository(db DBTX) RoleRepository {
+	return &rolePostgresRepository{db: db}
+}
+
+func (r *rolePostgresRepository) WithTx(tx DBTX) RoleRepository {
+	return &rolePostgresRepository{db: tx}
 }
 
 // LoadPermissions mengambil SELURUH pasangan role dan permission sekaligus.
@@ -26,7 +29,7 @@ func NewRoleRepository(pool *pgxpool.Pool) RoleRepository {
 func (r *rolePostgresRepository) LoadPermissions(
 	ctx context.Context,
 ) (map[string][]string, error) {
-	rows, err := r.pool.Query(ctx,
+	rows, err := r.db.Query(ctx,
 		`SELECT r.name, COALESCE(rp.permission_name, '')
 		 FROM roles r
 		 LEFT JOIN role_permissions rp ON rp.role_name = r.name
