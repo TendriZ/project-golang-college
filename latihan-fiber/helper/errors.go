@@ -1,4 +1,5 @@
 package helper
+
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
@@ -10,16 +11,16 @@ import (
 // Code TIDAK boleh berubah — ia bagian dari kontrak API, karena client
 // menuliskan percabangan berdasarkan nilainya.
 const (
-	CodeValidation = "VALIDATION_ERROR"
-	CodeBadRequest = "BAD_REQUEST"
-	CodeUnauthorized = "UNAUTHORIZED"
-	CodeForbidden = "FORBIDDEN"
-	CodeNotFound = "NOT_FOUND"
-	CodeConflict = "CONFLICT"
-	CodeUnsupportedMedia = "UNSUPPORTED_MEDIA_TYPE"
-	CodeNotAcceptable = "NOT_ACCEPTABLE"
-	CodeTooManyRequests = "TOO_MANY_REQUESTS"
-	CodeInternal = "INTERNAL_ERROR"
+	CodeValidation         = "VALIDATION_ERROR"
+	CodeBadRequest         = "BAD_REQUEST"
+	CodeUnauthorized       = "UNAUTHORIZED"
+	CodeForbidden          = "FORBIDDEN"
+	CodeNotFound           = "NOT_FOUND"
+	CodeConflict           = "CONFLICT"
+	CodeUnsupportedMedia   = "UNSUPPORTED_MEDIA_TYPE"
+	CodeNotAcceptable      = "NOT_ACCEPTABLE"
+	CodeTooManyRequests    = "TOO_MANY_REQUESTS"
+	CodeInternal           = "INTERNAL_ERROR"
 	CodeServiceUnavailable = "SERVICE_UNAVAILABLE"
 )
 
@@ -29,18 +30,18 @@ const (
 // menggambarkan apa yang salah; urusan menuliskannya sebagai response
 // diserahkan sepenuhnya kepada ErrorHandler terpusat.
 type AppError struct {
-	Status int // status HTTP yang akan dikirim
-	Code string // kode stabil untuk client
-	Message string // penjelasan untuk manusia
-	Fields map[string]string // detail per-field, khusus kegagalan validasi
-	cause error // error asli, untuk log — tidak pernah dikirim
+	Status  int               // status HTTP yang akan dikirim
+	Code    string            // kode stabil untuk client
+	Message string            // penjelasan untuk manusia
+	Fields  map[string]string // detail per-field, khusus kegagalan validasi
+	cause   error             // error asli, untuk log — tidak pernah dikirim
 }
 
 func (e *AppError) Error() string {
 	if e.cause != nil {
 		return fmt.Sprintf("%s: %s: %v", e.Code, e.Message, e.cause)
 	}
- return fmt.Sprintf("%s: %s", e.Code, e.Message)
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
 // Unwrap membuat errors.Is dan errors.As tetap dapat menembus AppError
@@ -48,20 +49,29 @@ func (e *AppError) Error() string {
 func (e *AppError) Unwrap() error { return e.cause }
 
 func BadRequest(message string) *AppError {
- 	return &AppError{Status: fiber.StatusBadRequest, Code: CodeBadRequest, Message: message}
+	return &AppError{Status: fiber.StatusBadRequest, Code: CodeBadRequest, Message: message}
 }
 func Unauthorized(message string) *AppError {
- 	return &AppError{Status: fiber.StatusUnauthorized, Code: CodeUnauthorized, Message: message}
+	return &AppError{Status: fiber.StatusUnauthorized, Code: CodeUnauthorized, Message: message}
 }
 func Forbidden(message string) *AppError {
- 	return &AppError{Status: fiber.StatusForbidden, Code: CodeForbidden, Message: message}
+	return &AppError{Status: fiber.StatusForbidden, Code: CodeForbidden, Message: message}
 }
 func NotFound(message string) *AppError {
- 	return &AppError{Status: fiber.StatusNotFound, Code: CodeNotFound, Message: message}
+	return &AppError{Status: fiber.StatusNotFound, Code: CodeNotFound, Message: message}
 }
 func Conflict(message string) *AppError {
- 	return &AppError{Status: fiber.StatusConflict, Code: CodeConflict, Message: message}
+	return &AppError{Status: fiber.StatusConflict, Code: CodeConflict, Message: message}
 }
+
+// NewError dipakai bila sebuah kegagalan butuh kode yang lebih spesifik
+// daripada kode umum di atas — misalnya COURSE_FULL alih-alih CONFLICT.
+// Client dapat menampilkan pesan berbeda untuk "kelas penuh" dan "sudah
+// terdaftar", padahal keduanya sama-sama 409.
+func NewError(status int, code, message string) *AppError {
+	return &AppError{Status: status, Code: code, Message: message}
+}
+
 func Validation(fields map[string]string) *AppError {
 	return &AppError{
 		Status:  fiber.StatusUnprocessableEntity,
@@ -72,42 +82,43 @@ func Validation(fields map[string]string) *AppError {
 }
 func NotAcceptable(message string) *AppError {
 	return &AppError{
-		Status: fiber.StatusNotAcceptable, 
-		Code: CodeNotAcceptable, 
+		Status:  fiber.StatusNotAcceptable,
+		Code:    CodeNotAcceptable,
 		Message: message,
- 	}
+	}
 }
+
 // Internal sengaja memakai pesan yang seragam dan tidak informatif.
 // Detail teknisnya disimpan pada cause dan hanya muncul di log, karena
 // pesan error database sering membocorkan nama tabel dan struktur query.
 func Internal(cause error) *AppError {
 	return &AppError{
-		Status: fiber.StatusInternalServerError, 
-		Code: CodeInternal,
+		Status:  fiber.StatusInternalServerError,
+		Code:    CodeInternal,
 		Message: "terjadi kesalahan pada server", cause: cause,
- 	}
+	}
 }
 
-func UnsupportedMediaType (message string) *AppError {
+func UnsupportedMediaType(message string) *AppError {
 	return &AppError{
-		Status: fiber.StatusUnsupportedMediaType, 
-		Code: CodeUnsupportedMedia,
+		Status:  fiber.StatusUnsupportedMediaType,
+		Code:    CodeUnsupportedMedia,
 		Message: message,
 	}
 }
 
 func TooManyRequests(message string) *AppError {
 	return &AppError{
-		Status: fiber.StatusTooManyRequests, 
-		Code: CodeTooManyRequests,
+		Status:  fiber.StatusTooManyRequests,
+		Code:    CodeTooManyRequests,
 		Message: message,
 	}
 }
 
 func ServiceUnavailable(message string) *AppError {
-	return &AppError {
-		Status: fiber.StatusServiceUnavailable, 
-		Code: CodeServiceUnavailable,
+	return &AppError{
+		Status:  fiber.StatusServiceUnavailable,
+		Code:    CodeServiceUnavailable,
 		Message: message,
 	}
 }

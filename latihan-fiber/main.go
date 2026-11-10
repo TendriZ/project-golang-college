@@ -45,6 +45,8 @@ func main() {
 	userRepository := repository.NewUserRepository(pool)
 	tokenRepository := repository.NewTokenRepository(pool)
 	roleRepository := repository.NewRoleRepository(pool)
+	courseRepository := repository.NewCourseRepository(pool)
+	txManager := repository.NewTxManager(pool)
 
 	// Pemetaan role ke permission dibaca SEKALI saat aplikasi menyala.
 	// Konsekuensinya: perubahan hak akses di database baru berlaku setelah
@@ -63,12 +65,15 @@ func main() {
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
 		permissions,
 	)
+	courseService := service.NewCourseService(courseRepository, txManager)
+
 	app := config.NewApp(logger, route.Dependencies{
-		Pool:        pool,
-		JWT:         jwtManager,
-		Permissions: permissions,
-		UserService: userService,
-		AuthService: authService,
+		Pool:          pool,
+		JWT:           jwtManager,
+		Permissions:   permissions,
+		UserService:   userService,
+		AuthService:   authService,
+		CourseService: courseService,
 	})
 
 	port := config.GetEnv("APP_PORT", "3000")
