@@ -37,6 +37,22 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	mongoClient, err := database.NewMongoClient(context.Background())
+	if err != nil {
+		logger.Error("gagal terhubung ke MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	// Disconnect menutup seluruh koneksi di pool milik driver. Diberi batas
+	// waktu sendiri, karena context milik request sudah tidak berlaku saat
+	// aplikasi berhenti.
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = mongoClient.Disconnect(ctx)
+	}()
+	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
+
 	jwtManager := helper.NewJWTManager(
 		jwtSecret,
 		config.GetEnv("JWT_ISSUER", "praktikum-backend"),
@@ -47,6 +63,12 @@ func main() {
 	roleRepository := repository.NewRoleRepository(pool)
 	courseRepository := repository.NewCourseRepository(pool)
 	txManager := repository.NewTxManager(pool)
+
+	reviewRepository := repository.NewReviewRepository(mongoDB)
+	if err := reviewRepository.EnsureIndexes(context.Background()); err != nil {
+		logger.Error("gagal membuat index MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 
 	// Pemetaan role ke permission dibaca SEKALI saat aplikasi menyala.
 	// Konsekuensinya: perubahan hak akses di database baru berlaku setelah
@@ -66,14 +88,17 @@ func main() {
 		permissions,
 	)
 	courseService := service.NewCourseService(courseRepository, txManager)
+	reviewService := service.NewReviewService(reviewRepository, courseRepository, permissions)
 
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:          pool,
+		Mongo:         mongoClient,
 		JWT:           jwtManager,
 		Permissions:   permissions,
 		UserService:   userService,
 		AuthService:   authService,
 		CourseService: courseService,
+		ReviewService: reviewService,
 	})
 
 	port := config.GetEnv("APP_PORT", "3000")

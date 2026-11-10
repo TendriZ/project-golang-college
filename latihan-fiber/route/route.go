@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"latihan-fiber/app/service"
 	"latihan-fiber/helper"
@@ -14,18 +15,20 @@ import (
 
 type Dependencies struct {
 	Pool          *pgxpool.Pool
+	Mongo         *mongo.Client
 	JWT           *helper.JWTManager
 	Permissions   *helper.PermissionSet
 	UserService   *service.UserService
 	AuthService   *service.AuthService
 	CourseService *service.CourseService
+	ReviewService *service.ReviewService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
 	// --- publik ---
-	api.Get("/health", healthCheck(deps.Pool))
+	api.Get("/health", healthCheck(deps.Pool, deps.Mongo))
 
 	// --- autentikasi ---
 	auth := api.Group("/auth", middleware.RequireJSON)
@@ -77,28 +80,51 @@ func Register(app *fiber.App, deps Dependencies) {
 		middleware.RequirePermission(perms, "course:manage"),
 		deps.CourseService.UpdateQuota)
 
+	// Ulasan dibaca dan ditulis lewat kelas. Route "/summary" didaftarkan
+	// sebelum "/:id/reviews" agar tidak tertukar dengan pola yang lebih umum.
+	courses.Get("/:id/reviews/summary", deps.ReviewService.Summary)
+	courses.Get("/:id/reviews", deps.ReviewService.ListByCourse)
+	courses.Post("/:id/reviews", deps.ReviewService.Create)
+
 	enrollments := api.Group("/enrollments",
 		middleware.RequireJSON,
 		middleware.RequireAuth(deps.JWT))
 	enrollments.Post("/swap", deps.CourseService.Swap)
+
+	// --- ulasan kelas (MongoDB) ---
+	reviews := api.Group("/reviews",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	reviews.Get("/:id", deps.ReviewService.Get)
+	reviews.Patch("/:id", deps.ReviewService.Update)
+	reviews.Delete("/:id", deps.ReviewService.Delete)
+	reviews.Post("/:id/replies", deps.ReviewService.Reply)
+	reviews.Post("/:id/helpful", deps.ReviewService.MarkHelpful)
 }
 
-// healthCheck melaporkan kondisi layanan beserta databasenya.
-func healthCheck(pool *pgxpool.Pool) fiber.Handler {
+// healthCheck kini memeriksa DUA database. Aplikasi dianggap sehat hanya
+// bila keduanya dapat dihubungi, dan pesan kegagalannya menyebut yang mana.
+func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
 		defer cancel()
 
 		if err := pool.Ping(ctx); err != nil {
 			return helper.ServiceUnavailable(
-				"database tidak dapat dihubungi",
+				"PostgreSQL tidak dapat dihubungi",
+			)
+		}
+
+		if err := mongoClient.Ping(ctx, nil); err != nil {
+			return helper.ServiceUnavailable(
+				"MongoDB tidak dapat dihubungi",
 			)
 		}
 
 		return helper.Success(
 			c,
 			fiber.StatusOK,
-			"server dan database berjalan",
+			"server, PostgreSQL, dan MongoDB berjalan",
 			nil,
 		)
 	}
