@@ -46,6 +46,11 @@ func main() {
 	userRepository := repository.NewUserRepository(pool)
 	tokenRepository := repository.NewTokenRepository(pool)
 	roleRepository := repository.NewRoleRepository(pool)
+	supervisorRepository := repository.NewSupervisorRepository(pool)
+	supervisionRepository := repository.NewSupervisionRepository(pool)
+
+	// Satu pintu untuk seluruh transaction pada aplikasi ini.
+	txManager := repository.NewTxManager(pool)
 
 	// Pemetaan role ke permission dibaca SEKALI saat aplikasi menyala.
 	// Konsekuensinya: perubahan hak akses di database baru berlaku setelah
@@ -59,6 +64,9 @@ func main() {
 	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
 	studentService := service.NewStudentService(studentRepository, permissions)
+	supervisionService := service.NewSupervisionService(
+		studentRepository, supervisorRepository, supervisionRepository, txManager,
+	)
 	authService := service.NewAuthService(
 		userRepository, tokenRepository, jwtManager,
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
@@ -66,11 +74,12 @@ func main() {
 	)
 
 	app := config.NewApp(logger, route.Dependencies{
-		Pool:           pool,
-		JWT:            jwtManager,
-		Permissions:    permissions,
-		StudentService: studentService,
-		AuthService:    authService,
+		Pool:               pool,
+		JWT:                jwtManager,
+		Permissions:        permissions,
+		StudentService:     studentService,
+		SupervisionService: supervisionService,
+		AuthService:        authService,
 	})
 
 	port := config.GetEnv("APP_PORT", "3000")

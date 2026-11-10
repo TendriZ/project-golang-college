@@ -13,11 +13,12 @@ import (
 )
 
 type Dependencies struct {
-	Pool           *pgxpool.Pool
-	JWT            *helper.JWTManager
-	Permissions    *helper.PermissionSet
-	StudentService *service.StudentService
-	AuthService    *service.AuthService
+	Pool               *pgxpool.Pool
+	JWT                *helper.JWTManager
+	Permissions        *helper.PermissionSet
+	StudentService     *service.StudentService
+	SupervisionService *service.SupervisionService
+	AuthService        *service.AuthService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
@@ -59,6 +60,25 @@ func Register(app *fiber.App, deps Dependencies) {
 	students.Get("/:id", deps.StudentService.Get)
 	students.Put("/:id", deps.StudentService.Replace)
 	students.Patch("/:id", deps.StudentService.Patch)
+
+	// --- pembimbing tugas akhir ---
+	// Seluruh endpoint di bawah ini adalah operasi administratif:
+	// keputusannya tidak bergantung pada pemilik data, sehingga cukup
+	// dijaga middleware permission supervision:manage.
+	supervisors := api.Group("/supervisors",
+		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	supervisors.Post("/:id/assign",
+		middleware.RequirePermission(perms, "supervision:manage"),
+		deps.SupervisionService.Assign)
+	supervisors.Patch("/:id",
+		middleware.RequirePermission(perms, "supervision:manage"),
+		deps.SupervisionService.UpdateQuota)
+
+	supervisions := api.Group("/supervisions",
+		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	supervisions.Post("/switch",
+		middleware.RequirePermission(perms, "supervision:manage"),
+		deps.SupervisionService.Switch)
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
