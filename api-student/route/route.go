@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"api-student/app/service"
 	"api-student/helper"
@@ -14,18 +15,20 @@ import (
 
 type Dependencies struct {
 	Pool               *pgxpool.Pool
+	Mongo              *mongo.Client
 	JWT                *helper.JWTManager
 	Permissions        *helper.PermissionSet
 	StudentService     *service.StudentService
 	SupervisionService *service.SupervisionService
 	AuthService        *service.AuthService
+	PortfolioService   *service.PortfolioService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
 	// Publik — tetap tanpa token (Tugas 3: /health tetap publik)
-	api.Get("/health", healthCheck(deps.Pool))
+	api.Get("/health", healthCheck(deps.Pool, deps.Mongo))
 
 	// Autentikasi
 	auth := api.Group("/auth", middleware.RequireJSON)
@@ -61,6 +64,22 @@ func Register(app *fiber.App, deps Dependencies) {
 	students.Put("/:id", deps.StudentService.Replace)
 	students.Patch("/:id", deps.StudentService.Patch)
 
+	// --- portofolio (MongoDB) ---
+	// Semua endpoint portofolio di bawah grup /students sudah mewarisi
+	// RequireJSON dan RequireAuth dari grup induk. Service memeriksa
+	// keberadaan mahasiswa di PostgreSQL sebelum menyentuh MongoDB.
+	portfolio := students.Group("/:id/portfolio")
+	portfolio.Get("/", deps.PortfolioService.Get)
+	portfolio.Put("/", deps.PortfolioService.Upsert)
+	portfolio.Post("/projects", deps.PortfolioService.AddProject)
+	portfolio.Delete("/projects/:projectId", deps.PortfolioService.DeleteProject)
+
+	// Statistik teknologi gabungan (melintasi seluruh portofolio).
+	portfolios := api.Group("/portfolios",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	portfolios.Get("/stats/technologies", deps.PortfolioService.StatsTechnologies)
+
 	// --- pembimbing tugas akhir ---
 	// Seluruh endpoint di bawah ini adalah operasi administratif:
 	// keputusannya tidak bergantung pada pemilik data, sehingga cukup
@@ -81,13 +100,26 @@ func Register(app *fiber.App, deps Dependencies) {
 		deps.SupervisionService.Switch)
 }
 
-func healthCheck(pool *pgxpool.Pool) fiber.Handler {
+// healthCheck kini memeriksa DUA database. Aplikasi dianggap sehat hanya
+// bila keduanya dapat dihubungi, dan pesan kegagalannya menyebut yang mana.
+func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
 		defer cancel()
+
 		if err := pool.Ping(ctx); err != nil {
-			return helper.ServiceUnavailable("database tidak dapat dihubungi")
+			return helper.ServiceUnavailable("PostgreSQL tidak dapat dihubungi")
 		}
-		return helper.Success(c, fiber.StatusOK, "server dan database berjalan", nil)
+
+		if err := mongoClient.Ping(ctx, nil); err != nil {
+			return helper.ServiceUnavailable("MongoDB tidak dapat dihubungi")
+		}
+
+		return helper.Success(
+			c,
+			fiber.StatusOK,
+			"server, PostgreSQL, dan MongoDB berjalan",
+			nil,
+		)
 	}
 }

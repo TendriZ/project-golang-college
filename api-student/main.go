@@ -36,6 +36,18 @@ func main() {
 	}
 	defer pool.Close()
 
+	mongoClient, err := database.NewMongoClient(context.Background())
+	if err != nil {
+		logger.Error("gagal terhubung ke MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = mongoClient.Disconnect(ctx)
+	}()
+	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "db_students"))
+
 	jwtManager := helper.NewJWTManager(
 		jwtSecret,
 		config.GetEnv("JWT_ISSUER", "praktikum-backend"),
@@ -73,13 +85,22 @@ func main() {
 		permissions,
 	)
 
+	portfolioRepository := repository.NewPortfolioRepository(mongoDB)
+	if err := portfolioRepository.EnsureIndexes(context.Background()); err != nil {
+		logger.Error("gagal membuat index MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	portfolioService := service.NewPortfolioService(portfolioRepository, studentRepository, permissions)
+
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:               pool,
+		Mongo:              mongoClient,
 		JWT:                jwtManager,
 		Permissions:        permissions,
 		StudentService:     studentService,
 		SupervisionService: supervisionService,
 		AuthService:        authService,
+		PortfolioService:   portfolioService,
 	})
 
 	port := config.GetEnv("APP_PORT", "3000")
