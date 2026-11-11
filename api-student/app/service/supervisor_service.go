@@ -21,6 +21,7 @@ type SupervisionService struct {
 	students     repository.StudentRepository
 	supervisors  repository.SupervisorRepository
 	supervisions repository.SupervisionRepository
+	outbox       repository.OutboxRepository
 	tx           *repository.TxManager
 }
 
@@ -28,12 +29,14 @@ func NewSupervisionService(
 	students repository.StudentRepository,
 	supervisors repository.SupervisorRepository,
 	supervisions repository.SupervisionRepository,
+	outbox repository.OutboxRepository,
 	tx *repository.TxManager,
 ) *SupervisionService {
 	return &SupervisionService{
 		students:     students,
 		supervisors:  supervisors,
 		supervisions: supervisions,
+		outbox:       outbox,
 		tx:           tx,
 	}
 }
@@ -224,15 +227,39 @@ func (s *SupervisionService) UpdateQuota(c *fiber.Ctx) error {
 
 	var updated model.Supervisor
 
-	// Satu UPDATE sudah atomik dengan sendirinya, tetapi tetap dijalankan
-	// lewat TxManager agar seluruh jalur tulis pada modul ini memakai
-	// satu pintu transaction yang sama.
+	// Sebelum ada notifikasi, UpdateQuota hanyalah SATU pernyataan SQL dan
+	// tidak membutuhkan transaction. Sekarang ia menjadi DUA pernyataan:
+	// mengubah kuota DAN mencatat event. Keduanya wajib berada di dalam
+	// satu transaction, karena tanpa itu hanya ada dua kemungkinan buruk:
+	//
+	//   - kuota tersimpan tetapi event gagal dicatat  -> perubahan berlaku
+	//     tanpa satu pun email, dan tidak ada cara menemukannya kembali;
+	//   - event tercatat tetapi kuota gagal tersimpan -> email mengumumkan
+	//     kuota yang tidak pernah berlaku.
+	//
+	// Dengan satu transaction, keduanya tersimpan bersama atau batal
+	// bersama. Perhatikan juga: fn ini TIDAK mengirim email dan TIDAK
+	// menyentuh Redis — hanya menulis dua baris database. Itu penting
+	// karena WithTx dapat menjalankan fn lebih dari sekali saat deadlock
+	// atau serialization failure.
 	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
 		var err error
 		updated, err = s.supervisors.WithTx(tx).UpdateQuota(
 			ctx, id, req.Quota, req.Version,
 		)
-		return err
+		if err != nil {
+			return err
+		}
+
+		// Nama pembimbing disalin ke dalam event agar notifikasi tetap
+		// menyebut nama yang berlaku saat perubahan terjadi, walaupun
+		// namanya diubah kemudian.
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventQuotaChanged,
+			model.QuotaChangedEvent{
+				SupervisorID:   updated.ID,
+				SupervisorName: updated.Name,
+				Quota:          updated.Quota,
+			})
 	})
 	if err != nil {
 		return translateSupervisionError(err)
