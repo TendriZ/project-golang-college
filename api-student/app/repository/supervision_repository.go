@@ -19,6 +19,11 @@ type SupervisionRepository interface {
 	FindByStudent(ctx context.Context, studentID int) (model.Supervision, error)
 	Assign(ctx context.Context, studentID, supervisorID int) error
 	Move(ctx context.Context, studentID, supervisorID int) error
+
+	// FindRecipients mengambil seluruh mahasiswa binaan seorang pembimbing
+	// beserta akun pemilik datanya. Hanya mahasiswa yang memiliki akun
+	// (owner_id terisi) yang dapat menerima email.
+	FindRecipients(ctx context.Context, supervisorID int) ([]model.QuotaRecipient, error)
 }
 
 const supervisionColumns = `id, student_id, supervisor_id, created_at`
@@ -98,4 +103,44 @@ func (r *supervisionPostgresRepository) Move(
 		return ErrNotSupervised
 	}
 	return nil
+}
+
+// FindRecipients menelusuri relasi yang menghubungkan seorang pembimbing
+// dengan alamat email mahasiswa binaannya:
+//
+//	supervisions.student_id -> students.id -> students.owner_id -> users.id
+//
+// students tidak menyimpan email; email ada pada akun yang mendaftarkan
+// data mahasiswa. Karena itu mahasiswa tanpa owner_id tidak muncul di sini
+// dan tidak menerima email — keadaan itu sah, bukan kegagalan query.
+//
+// GROUP BY mencegah satu akun menerima beberapa email untuk event yang
+// sama ketika akun tersebut memiliki lebih dari satu mahasiswa binaan
+// pembimbing ini. Idempotency key (outbox_id, user_id) memang hanya
+// mengizinkan satu notifikasi per akun per event.
+func (r *supervisionPostgresRepository) FindRecipients(
+	ctx context.Context, supervisorID int,
+) ([]model.QuotaRecipient, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT u.id, u.username, u.email
+		FROM supervisions sp
+		JOIN students s ON s.id = sp.student_id
+		JOIN users u    ON u.id = s.owner_id
+		WHERE sp.supervisor_id = $1
+		GROUP BY u.id, u.username, u.email
+		ORDER BY u.id`, supervisorID)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil penerima perubahan kuota: %w", err)
+	}
+	defer rows.Close()
+
+	recipients := []model.QuotaRecipient{}
+	for rows.Next() {
+		var rcp model.QuotaRecipient
+		if err := rows.Scan(&rcp.UserID, &rcp.Username, &rcp.Email); err != nil {
+			return nil, fmt.Errorf("membaca row penerima: %w", err)
+		}
+		recipients = append(recipients, rcp)
+	}
+	return recipients, rows.Err()
 }

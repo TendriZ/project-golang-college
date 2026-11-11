@@ -14,14 +14,15 @@ import (
 )
 
 type Dependencies struct {
-	Pool               *pgxpool.Pool
-	Mongo              *mongo.Client
-	JWT                *helper.JWTManager
-	Permissions        *helper.PermissionSet
-	StudentService     *service.StudentService
-	SupervisionService *service.SupervisionService
-	AuthService        *service.AuthService
-	PortfolioService   *service.PortfolioService
+	Pool                *pgxpool.Pool
+	Mongo               *mongo.Client
+	JWT                 *helper.JWTManager
+	Permissions         *helper.PermissionSet
+	StudentService      *service.StudentService
+	SupervisionService  *service.SupervisionService
+	AuthService         *service.AuthService
+	PortfolioService    *service.PortfolioService
+	NotificationService *service.NotificationService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
@@ -98,6 +99,20 @@ func Register(app *fiber.App, deps Dependencies) {
 	supervisions.Post("/switch",
 		middleware.RequirePermission(perms, "supervision:manage"),
 		deps.SupervisionService.Switch)
+
+	// --- notifikasi ---
+	// Setiap pengguna hanya boleh membaca notifikasi miliknya sendiri.
+	// Kepemilikan ditentukan dari token, bukan dari parameter URL.
+	api.Get("/notifications/mine",
+		middleware.RequireAuth(deps.JWT),
+		deps.NotificationService.Mine)
+
+	// Pemantauan outbox dan queue adalah operasi administratif.
+	admin := api.Group("/admin",
+		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	admin.Get("/queue",
+		middleware.RequirePermission(perms, "queue:monitor"),
+		deps.NotificationService.Monitor)
 }
 
 // healthCheck kini memeriksa DUA database. Aplikasi dianggap sehat hanya

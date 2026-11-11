@@ -14,14 +14,15 @@ import (
 )
 
 type Dependencies struct {
-	Pool          *pgxpool.Pool
-	Mongo         *mongo.Client
-	JWT           *helper.JWTManager
-	Permissions   *helper.PermissionSet
-	UserService   *service.UserService
-	AuthService   *service.AuthService
-	CourseService *service.CourseService
-	ReviewService *service.ReviewService
+	Pool                *pgxpool.Pool
+	Mongo               *mongo.Client
+	JWT                 *helper.JWTManager
+	Permissions         *helper.PermissionSet
+	UserService         *service.UserService
+	AuthService         *service.AuthService
+	CourseService       *service.CourseService
+	ReviewService       *service.ReviewService
+	NotificationService *service.NotificationService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
@@ -100,6 +101,18 @@ func Register(app *fiber.App, deps Dependencies) {
 	reviews.Delete("/:id", deps.ReviewService.Delete)
 	reviews.Post("/:id/replies", deps.ReviewService.Reply)
 	reviews.Post("/:id/helpful", deps.ReviewService.MarkHelpful)
+
+	// --- notifikasi (diisi oleh worker, dibaca lewat API) ---
+	notifications := api.Group("/notifications",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	notifications.Get("/mine", deps.NotificationService.Mine)
+
+	admin := api.Group("/admin",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	admin.Get("/queue", middleware.RequirePermission(perms, "queue:monitor"),
+		deps.NotificationService.Monitor)
 }
 
 // healthCheck kini memeriksa DUA database. Aplikasi dianggap sehat hanya

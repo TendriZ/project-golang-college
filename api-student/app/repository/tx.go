@@ -54,6 +54,19 @@ func (m *TxManager) WithTx(ctx context.Context, fn func(tx DBTX) error) error {
 	return err
 }
 
+// WithTxOnce menjalankan fn di dalam satu transaction TANPA mencoba ulang
+// saat deadlock atau serialization failure.
+//
+// Dipakai oleh worker dan relay, dua komponen yang di dalam transaction-nya
+// melakukan hal di luar database: relay melakukan enqueue ke Redis,
+// worker mengirim email. Mengulang fn secara otomatis akan mengulang efek
+// samping itu juga — enqueue ganda atau email ganda. Kegagalan transaction
+// seperti itu diserahkan kepada mekanisme retry Asynq, yang tahu persis
+// task mana yang perlu diulang.
+func (m *TxManager) WithTxOnce(ctx context.Context, fn func(tx DBTX) error) error {
+	return m.runOnce(ctx, fn)
+}
+
 func (m *TxManager) runOnce(ctx context.Context, fn func(tx DBTX) error) error {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {
