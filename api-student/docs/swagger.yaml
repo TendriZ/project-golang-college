@@ -1,0 +1,1352 @@
+basePath: /api/v1
+definitions:
+  model.AddProjectRequest:
+    properties:
+      judul:
+        maxLength: 200
+        minLength: 1
+        type: string
+      tahun:
+        maximum: 2100
+        minimum: 1900
+        type: integer
+      tautan:
+        maxLength: 500
+        minLength: 1
+        type: string
+      teknologi:
+        items:
+          type: string
+        maxItems: 10
+        type: array
+    required:
+    - judul
+    - tahun
+    - tautan
+    type: object
+  model.AssignSupervisionRequest:
+    properties:
+      student_id:
+        minimum: 1
+        type: integer
+    required:
+    - student_id
+    type: object
+  model.AssignSupervisionResponse:
+    properties:
+      student_id:
+        type: integer
+      supervisor:
+        $ref: '#/definitions/model.Supervisor'
+    type: object
+  model.Certificate:
+    properties:
+      id:
+        type: string
+      nama:
+        type: string
+      penerbit:
+        type: string
+      tanggal:
+        type: string
+    type: object
+  model.CreateStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      nim:
+        minimum: 1
+        type: integer
+    required:
+    - name
+    - nim
+    type: object
+  model.CursorMeta:
+    properties:
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      next_cursor:
+        type: string
+    type: object
+  model.ErrorResponse:
+    properties:
+      code:
+        type: string
+      fields:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  model.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  model.Meta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  model.Notification:
+    properties:
+      body:
+        type: string
+      channel:
+        type: string
+      id:
+        type: integer
+      outbox_id:
+        type: integer
+      sent_at:
+        type: string
+      subject:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  model.PatchStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      nim:
+        minimum: 1
+        type: integer
+    type: object
+  model.Portfolio:
+    properties:
+      bio:
+        type: string
+      certificates:
+        items:
+          $ref: '#/definitions/model.Certificate'
+        type: array
+      created_at:
+        type: string
+      headline:
+        type: string
+      id:
+        type: string
+      projects:
+        items:
+          $ref: '#/definitions/model.Project'
+        type: array
+      student_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.PortfolioStats:
+    properties:
+      technologies:
+        items:
+          $ref: '#/definitions/model.TechCount'
+        type: array
+    type: object
+  model.Profile:
+    properties:
+      permissions:
+        items:
+          type: string
+        type: array
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  model.Project:
+    properties:
+      id:
+        type: string
+      judul:
+        type: string
+      tahun:
+        type: integer
+      tautan:
+        type: string
+      teknologi:
+        items:
+          type: string
+        type: array
+    type: object
+  model.QueueInfo:
+    properties:
+      active:
+        type: integer
+      archived:
+        type: integer
+      completed:
+        type: integer
+      failed_today:
+        type: integer
+      name:
+        type: string
+      pending:
+        type: integer
+      processed_today:
+        type: integer
+      retry:
+        type: integer
+      scheduled:
+        type: integer
+    type: object
+  model.QueueStats:
+    properties:
+      notifications_sent:
+        type: integer
+      oldest_pending_age:
+        type: string
+      outbox_pending:
+        type: integer
+      outbox_published:
+        type: integer
+      queue:
+        $ref: '#/definitions/model.QueueInfo'
+      queue_error:
+        type: string
+    type: object
+  model.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        maxLength: 120
+        type: string
+      password:
+        maxLength: 72
+        type: string
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  model.ReplaceStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      nim:
+        minimum: 1
+        type: integer
+    required:
+    - name
+    - nim
+    type: object
+  model.Student:
+    properties:
+      created_at:
+        type: string
+      grade:
+        type: number
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      nim:
+        type: integer
+      owner_id:
+        type: integer
+    type: object
+  model.StudentPage:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.Student'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/model.CursorMeta'
+      success:
+        type: boolean
+    type: object
+  model.Supervisor:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      quota:
+        type: integer
+      supervised_count:
+        type: integer
+      version:
+        type: integer
+    type: object
+  model.SwitchSupervisionRequest:
+    properties:
+      student_id:
+        minimum: 1
+        type: integer
+      supervisor_id:
+        minimum: 1
+        type: integer
+    required:
+    - student_id
+    - supervisor_id
+    type: object
+  model.SwitchSupervisionResponse:
+    properties:
+      previous_supervisor_id:
+        type: integer
+      student_id:
+        type: integer
+      supervisor:
+        $ref: '#/definitions/model.Supervisor'
+    type: object
+  model.TechCount:
+    properties:
+      teknologi:
+        type: string
+      total:
+        type: integer
+    type: object
+  model.TokenPair:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  model.UpdatePortfolioRequest:
+    properties:
+      bio:
+        maxLength: 2000
+        minLength: 1
+        type: string
+      headline:
+        maxLength: 200
+        minLength: 1
+        type: string
+    type: object
+  model.UpdateSupervisorQuotaRequest:
+    properties:
+      quota:
+        minimum: 1
+        type: integer
+      version:
+        minimum: 1
+        type: integer
+    required:
+    - quota
+    - version
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  model.WebResponse:
+    properties:
+      data: {}
+      errors: {}
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/model.Meta'
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: |-
+    API mahasiswa, portofolio, pembimbing tugas akhir, dan notifikasi.
+    Seluruh endpoint selain /auth dan /health memerlukan access token.
+  title: API Manajemen Mahasiswa
+  version: "1.0"
+paths:
+  /admin/queue:
+    get:
+      description: Tetap menjawab 200 saat Redis mati; field queue_error menjelaskan
+        sebabnya.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.QueueStats'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak memiliki permission queue:monitor
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Keadaan outbox dan queue (admin)
+      tags:
+      - admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Pesan kegagalan sengaja sama untuk username tidak ada dan password
+        salah.
+      parameters:
+      - description: Username dan password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TokenPair'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Username atau password salah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "429":
+          description: Terlalu banyak percobaan login
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Login dan dapatkan pasangan token
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Selalu menjawab 200, termasuk bila refresh token sudah tidak berlaku.
+      parameters:
+      - description: Refresh token yang akan dicabut
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.WebResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Cabut refresh token
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Menyertakan daftar permission untuk kebutuhan tampilan frontend;
+        pengamanan tetap di middleware.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Profile'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Profil pengguna yang sedang login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token lama langsung dicabut (rotasi); token yang dipakai
+        dua kali ditolak.
+      parameters:
+      - description: Refresh token yang masih berlaku
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TokenPair'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Refresh token tidak valid atau kedaluwarsa
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Perbarui access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Role akun baru selalu "user". Password minimal 8 karakter dan memuat
+        huruf serta angka.
+      parameters:
+      - description: Data akun baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.User'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Username sudah dipakai
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal; detail per field ada di fields
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Mendaftarkan akun baru
+      tags:
+      - auth
+  /health:
+    get:
+      description: Memeriksa PostgreSQL dan MongoDB. Endpoint ini publik.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.WebResponse'
+        "503":
+          description: Salah satu database tidak dapat dihubungi
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Status server dan database
+      tags:
+      - health
+  /notifications/mine:
+    get:
+      description: Kepemilikan ditentukan dari token, bukan parameter URL. Maksimal
+        20 notifikasi terbaru.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Notification'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Notifikasi milik pengguna yang sedang login
+      tags:
+      - notifications
+  /portfolios/stats/technologies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.PortfolioStats'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Statistik teknologi paling banyak dipakai
+      tags:
+      - portfolio
+  /students:
+    get:
+      description: 'Mengembalikan maksimal `limit` baris dan penanda has_more. Kirim
+        ulang next_cursor sebagai `cursor` untuk halaman berikutnya. Meminta Accept:
+        text/csv menghasilkan unduhan CSV.'
+      parameters:
+      - description: Jumlah baris per halaman (1-100, bawaan 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Cari pada nama atau NIM
+        in: query
+        name: search
+        type: string
+      - description: Saring status aktif
+        in: query
+        name: is_active
+        type: boolean
+      - description: Nilai minimum
+        in: query
+        name: min_grade
+        type: number
+      - description: Nilai maksimum
+        in: query
+        name: max_grade
+        type: number
+      - description: Nilai next_cursor dari halaman sebelumnya
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.StudentPage'
+        "400":
+          description: Cursor atau filter tidak valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak memiliki permission student:list
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "406":
+          description: Format yang diminta tidak didukung
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daftar mahasiswa (cursor pagination)
+      tags:
+      - students
+    post:
+      consumes:
+      - application/json
+      description: owner_id selalu diambil dari token, bukan dari body (mencegah mass
+        assignment).
+      parameters:
+      - description: Data mahasiswa
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak memiliki permission student:create
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: NIM sudah dipakai
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Membuat mahasiswa
+      tags:
+      - students
+  /students/{id}:
+    delete:
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Tidak ada body
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak memiliki permission student:delete
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus mahasiswa
+      tags:
+      - students
+    get:
+      description: Pemilik data selalu boleh; pengguna lain perlu permission student:read:any.
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Bukan pemilik dan tanpa permission :any
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail satu mahasiswa
+      tags:
+      - students
+    patch:
+      consumes:
+      - application/json
+      description: Hanya field yang dikirim yang berubah. Body kosong ditolak dengan
+        400.
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Field yang diubah
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PatchStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body kosong atau bukan JSON
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: NIM sudah dipakai mahasiswa lain
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah sebagian field mahasiswa
+      tags:
+      - students
+    put:
+      consumes:
+      - application/json
+      description: 'PUT bersifat idempoten: field yang tidak dikirim dikembalikan
+        ke nilai nol.'
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Isi lengkap mahasiswa
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ReplaceStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: NIM sudah dipakai mahasiswa lain
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengganti seluruh isi mahasiswa
+      tags:
+      - students
+  /students/{id}/portfolio:
+    get:
+      description: Mahasiswa harus ada di PostgreSQL. Pemilik data boleh; pengguna
+        lain perlu permission portfolio:read:any.
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Portfolio'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Mahasiswa atau portofolio belum ada
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Portofolio seorang mahasiswa
+      tags:
+      - portfolio
+    put:
+      consumes:
+      - application/json
+      description: Proyek dan sertifikat yang sudah ada dipertahankan; body minimal
+        memuat satu field.
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Headline dan/atau bio
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePortfolioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Portfolio'
+              type: object
+        "400":
+          description: Body kosong atau bukan JSON
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Membuat atau memperbarui portofolio
+      tags:
+      - portfolio
+  /students/{id}/portfolio/projects:
+    post:
+      consumes:
+      - application/json
+      description: 'Teknologi dinormalisasi: huruf kecil, tanpa spasi tepi, tanpa
+        duplikat.'
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data proyek
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Portfolio'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menambah proyek ke portofolio
+      tags:
+      - portfolio
+  /students/{id}/portfolio/projects/{projectId}:
+    delete:
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID proyek di dalam dokumen portofolio
+        in: path
+        name: projectId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Portfolio'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus satu proyek dari portofolio
+      tags:
+      - portfolio
+  /supervisions/switch:
+    post:
+      consumes:
+      - application/json
+      description: 'Atomik: bila pembimbing tujuan penuh, mahasiswa tetap di pembimbing
+        lama dan tidak ada event notifikasi yang tercatat.'
+      parameters:
+      - description: Mahasiswa dan pembimbing tujuan
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.SwitchSupervisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.SwitchSupervisionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Mahasiswa atau pembimbing tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: SUPERVISOR_FULL, NOT_SUPERVISED, atau SAME_SUPERVISOR
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Memindahkan mahasiswa ke pembimbing lain
+      tags:
+      - supervision
+  /supervisors/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: 'Memakai optimistic locking: kirim version yang sedang dilihat.
+        Perubahan kuota dan event outbox ditulis dalam satu transaction.'
+      parameters:
+      - description: ID pembimbing
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Kuota baru dan version saat ini
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateSupervisorQuotaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Supervisor'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: VERSION_CONFLICT atau QUOTA_BELOW_SUPERVISED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah kuota pembimbing
+      tags:
+      - supervision
+  /supervisors/{id}/assign:
+    post:
+      consumes:
+      - application/json
+      description: Satu mahasiswa hanya boleh punya satu pembimbing. Slot diambil
+        dengan UPDATE bersyarat sehingga kuota tidak pernah terlampaui walau request
+        datang serentak.
+      parameters:
+      - description: ID pembimbing
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Mahasiswa yang ditetapkan
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AssignSupervisionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.AssignSupervisionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Tidak memiliki permission supervision:manage
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Mahasiswa atau pembimbing tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: SUPERVISOR_FULL atau ALREADY_SUPERVISED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menetapkan pembimbing kepada mahasiswa
+      tags:
+      - supervision
+securityDefinitions:
+  BearerAuth:
+    description: 'Isi dengan: Bearer <access_token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
