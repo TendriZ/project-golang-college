@@ -17,12 +17,25 @@ import (
 	"api-student/app/service"
 	"api-student/config"
 	"api-student/database"
+	_ "api-student/docs" // hasil swag init; mendaftarkan spesifikasi ke swagger
 	"api-student/helper"
 	"api-student/route"
 )
 
 const minSecretLength = 32
 
+// Blok komentar di bawah ini adalah informasi UMUM dokumentasi API. swag
+// hanya membacanya dari file yang disebut pada flag -g (bawaannya main.go).
+//
+// @title                       API Manajemen Mahasiswa
+// @version                     1.0
+// @description                 API mahasiswa, portofolio, pembimbing tugas akhir, dan notifikasi.
+// @description                 Seluruh endpoint selain /auth dan /health memerlukan access token.
+// @BasePath                    /api/v1
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 Isi dengan: Bearer <access_token>
 func main() {
 	role := flag.String("role", "all", "komponen yang dijalankan: api, worker, atau all")
 	flag.Parse()
@@ -159,6 +172,7 @@ func runAPI(
 		AuthService:         authService,
 		PortfolioService:    portfolioService,
 		NotificationService: notificationService,
+		EnableSwagger:       config.GetEnv("SWAGGER_ENABLED", "false") == "true",
 	})
 
 	port := config.GetEnv("APP_PORT", "3000")
