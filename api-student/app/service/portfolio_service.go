@@ -33,6 +33,20 @@ func NewPortfolioService(
 }
 
 // ---------- GET /students/:id/portfolio ----------
+// Get godoc
+//
+// @Summary      Portofolio seorang mahasiswa
+// @Description  Mahasiswa harus ada di PostgreSQL. Pemilik data boleh; pengguna lain perlu permission portfolio:read:any.
+// @Tags         portfolio
+// @Produce      json
+// @Param        id   path      int  true  "ID mahasiswa"
+// @Success      200  {object}  model.WebResponse{data=model.Portfolio}
+// @Failure      400  {object}  model.ErrorResponse
+// @Failure      401  {object}  model.ErrorResponse
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      404  {object}  model.ErrorResponse  "Mahasiswa atau portofolio belum ada"
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio [get]
 func (s *PortfolioService) Get(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -70,6 +84,24 @@ func (s *PortfolioService) Get(c *fiber.Ctx) error {
 // ---------- PUT /students/:id/portfolio ----------
 // Membuat atau mengganti seluruh portofolio (upsert). Tolak bila mahasiswa
 // tidak ada di PostgreSQL.
+//
+// # Upsert godoc
+//
+// @Summary      Membuat atau memperbarui portofolio
+// @Description  Proyek dan sertifikat yang sudah ada dipertahankan; body minimal memuat satu field.
+// @Tags         portfolio
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                            true  "ID mahasiswa"
+// @Param        body  body      model.UpdatePortfolioRequest    true  "Headline dan/atau bio"
+// @Success      200   {object}  model.WebResponse{data=model.Portfolio}
+// @Failure      400   {object}  model.ErrorResponse  "Body kosong atau bukan JSON"
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio [put]
 func (s *PortfolioService) Upsert(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -154,6 +186,24 @@ func (s *PortfolioService) Upsert(c *fiber.Ctx) error {
 }
 
 // ---------- POST /students/:id/portfolio/projects ----------
+//
+// # AddProject godoc
+//
+// @Summary      Menambah proyek ke portofolio
+// @Description  Teknologi dinormalisasi: huruf kecil, tanpa spasi tepi, tanpa duplikat.
+// @Tags         portfolio
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "ID mahasiswa"
+// @Param        body  body      model.AddProjectRequest  true  "Data proyek"
+// @Success      201   {object}  model.WebResponse{data=model.Portfolio}
+// @Failure      400   {object}  model.ErrorResponse
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio/projects [post]
 func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -202,6 +252,21 @@ func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 }
 
 // ---------- DELETE /students/:id/portfolio/projects/:projectId ----------
+//
+// # DeleteProject godoc
+//
+// @Summary      Menghapus satu proyek dari portofolio
+// @Tags         portfolio
+// @Produce      json
+// @Param        id         path      int  true  "ID mahasiswa"
+// @Param        projectId  path      int  true  "ID proyek di dalam dokumen portofolio"
+// @Success      200        {object}  model.WebResponse{data=model.Portfolio}
+// @Failure      400        {object}  model.ErrorResponse
+// @Failure      401        {object}  model.ErrorResponse
+// @Failure      403        {object}  model.ErrorResponse
+// @Failure      404        {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio/projects/{projectId} [delete]
 func (s *PortfolioService) DeleteProject(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -239,6 +304,16 @@ func (s *PortfolioService) DeleteProject(c *fiber.Ctx) error {
 }
 
 // ---------- GET /portfolios/stats/technologies ----------
+//
+// # StatsTechnologies godoc
+//
+// @Summary      Statistik teknologi paling banyak dipakai
+// @Tags         portfolio
+// @Produce      json
+// @Success      200  {object}  model.WebResponse{data=model.PortfolioStats}
+// @Failure      401  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /portfolios/stats/technologies [get]
 func (s *PortfolioService) StatsTechnologies(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
