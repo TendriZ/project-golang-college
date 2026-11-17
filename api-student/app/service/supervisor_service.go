@@ -41,18 +41,26 @@ func NewSupervisionService(
 	}
 }
 
-type assignSupervisionResponse struct {
-	StudentID  int              `json:"student_id"`
-	Supervisor model.Supervisor `json:"supervisor"`
-}
-
-type switchSupervisionResponse struct {
-	StudentID            int              `json:"student_id"`
-	PreviousSupervisorID int              `json:"previous_supervisor_id"`
-	Supervisor           model.Supervisor `json:"supervisor"`
-}
-
 // ---------- POST /supervisors/:id/assign ----------
+//
+// # Assign godoc
+//
+// @Summary      Menetapkan pembimbing kepada mahasiswa
+// @Description  Satu mahasiswa hanya boleh punya satu pembimbing. Slot diambil dengan UPDATE bersyarat sehingga kuota tidak pernah terlampaui walau request datang serentak.
+// @Tags         supervision
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                             true  "ID pembimbing"
+// @Param        body  body      model.AssignSupervisionRequest  true  "Mahasiswa yang ditetapkan"
+// @Success      201   {object}  model.WebResponse{data=model.AssignSupervisionResponse}
+// @Failure      400   {object}  model.ErrorResponse
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse  "Tidak memiliki permission supervision:manage"
+// @Failure      404   {object}  model.ErrorResponse  "Mahasiswa atau pembimbing tidak ditemukan"
+// @Failure      409   {object}  model.ErrorResponse  "SUPERVISOR_FULL atau ALREADY_SUPERVISED"
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /supervisors/{id}/assign [post]
 func (s *SupervisionService) Assign(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -70,7 +78,7 @@ func (s *SupervisionService) Assign(c *fiber.Ctx) error {
 		return helper.Validation(errs)
 	}
 
-	var result assignSupervisionResponse
+	var result model.AssignSupervisionResponse
 
 	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
 		students := s.students.WithTx(tx)
@@ -109,7 +117,7 @@ func (s *SupervisionService) Assign(c *fiber.Ctx) error {
 			return err
 		}
 
-		result = assignSupervisionResponse{
+		result = model.AssignSupervisionResponse{
 			StudentID:  req.StudentID,
 			Supervisor: supervisor,
 		}
@@ -128,6 +136,24 @@ func (s *SupervisionService) Assign(c *fiber.Ctx) error {
 }
 
 // ---------- POST /supervisions/switch ----------
+//
+// # Switch godoc
+//
+// @Summary      Memindahkan mahasiswa ke pembimbing lain
+// @Description  Atomik: bila pembimbing tujuan penuh, mahasiswa tetap di pembimbing lama dan tidak ada event notifikasi yang tercatat.
+// @Tags         supervision
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.SwitchSupervisionRequest  true  "Mahasiswa dan pembimbing tujuan"
+// @Success      200   {object}  model.WebResponse{data=model.SwitchSupervisionResponse}
+// @Failure      400   {object}  model.ErrorResponse
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse  "Mahasiswa atau pembimbing tidak ditemukan"
+// @Failure      409   {object}  model.ErrorResponse  "SUPERVISOR_FULL, NOT_SUPERVISED, atau SAME_SUPERVISOR"
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /supervisions/switch [post]
 func (s *SupervisionService) Switch(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -140,7 +166,7 @@ func (s *SupervisionService) Switch(c *fiber.Ctx) error {
 		return helper.Validation(errs)
 	}
 
-	var result switchSupervisionResponse
+	var result model.SwitchSupervisionResponse
 
 	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
 		students := s.students.WithTx(tx)
@@ -193,7 +219,7 @@ func (s *SupervisionService) Switch(c *fiber.Ctx) error {
 			return err
 		}
 
-		result = switchSupervisionResponse{
+		result = model.SwitchSupervisionResponse{
 			StudentID:            req.StudentID,
 			PreviousSupervisorID: current.SupervisorID,
 			Supervisor:           updated,
@@ -208,6 +234,25 @@ func (s *SupervisionService) Switch(c *fiber.Ctx) error {
 }
 
 // ---------- PATCH /supervisors/:id ----------
+//
+// # UpdateQuota godoc
+//
+// @Summary      Mengubah kuota pembimbing
+// @Description  Memakai optimistic locking: kirim version yang sedang dilihat. Perubahan kuota dan event outbox ditulis dalam satu transaction.
+// @Tags         supervision
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                                   true  "ID pembimbing"
+// @Param        body  body      model.UpdateSupervisorQuotaRequest    true  "Kuota baru dan version saat ini"
+// @Success      200   {object}  model.WebResponse{data=model.Supervisor}
+// @Failure      400   {object}  model.ErrorResponse
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      409   {object}  model.ErrorResponse  "VERSION_CONFLICT atau QUOTA_BELOW_SUPERVISED"
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /supervisors/{id} [patch]
 func (s *SupervisionService) UpdateQuota(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
