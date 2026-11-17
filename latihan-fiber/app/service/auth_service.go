@@ -36,6 +36,19 @@ func NewAuthService(
 	}
 }
 
+// Register godoc
+//
+// @Summary      Mendaftarkan akun baru
+// @Description  Role akun baru selalu "user". Password minimal 8 karakter dan memuat huruf serta angka.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.RegisterRequest  true  "Data akun baru"
+// @Success      201   {object}  model.WebResponse{data=model.User}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      409   {object}  model.ErrorResponse  "Username sudah dipakai"
+// @Failure      422   {object}  model.ErrorResponse  "Validasi gagal; detail per field ada di fields"
+// @Router       /auth/register [post]
 func (s *AuthService) Register(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -78,6 +91,18 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 		"/api/v1/users/"+strconv.Itoa(created.ID))
 }
 
+// Login godoc
+//
+// @Summary      Login dan mendapatkan pasangan token
+// @Description  Dibatasi 5 kali gagal per menit per IP.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.LoginRequest  true  "Username dan password"
+// @Success      200   {object}  model.WebResponse{data=model.TokenPair}
+// @Failure      401   {object}  model.ErrorResponse  "Username atau password salah"
+// @Failure      429   {object}  model.ErrorResponse  "Terlalu banyak percobaan login"
+// @Router       /auth/login [post]
 func (s *AuthService) Login(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -116,6 +141,17 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 	return helper.Success(c, fiber.StatusOK, "login berhasil", pair)
 }
 
+// Refresh godoc
+//
+// @Summary      Menukar refresh token dengan pasangan token baru
+// @Description  Refresh token lama langsung dicabut (rotation).
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.RefreshRequest  true  "Refresh token"
+// @Success      200   {object}  model.WebResponse{data=model.TokenPair}
+// @Failure      401   {object}  model.ErrorResponse  "Refresh token tidak valid, kedaluwarsa, atau sudah dicabut"
+// @Router       /auth/refresh [post]
 func (s *AuthService) Refresh(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -153,6 +189,17 @@ func (s *AuthService) Refresh(c *fiber.Ctx) error {
 	return helper.Success(c, fiber.StatusOK, "token berhasil diperbarui", pair)
 }
 
+// Logout godoc
+//
+// @Summary      Mencabut refresh token
+// @Description  Bila refresh_token tidak dikirim, permintaan tetap dijawab 200.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.RefreshRequest  true  "Refresh token yang dicabut"
+// @Success      200   {object}  model.WebResponse
+// @Failure      400   {object}  model.ErrorResponse
+// @Router       /auth/logout [post]
 func (s *AuthService) Logout(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -170,6 +217,15 @@ func (s *AuthService) Logout(c *fiber.Ctx) error {
 	return helper.Success(c, fiber.StatusOK, "logout berhasil", nil)
 }
 
+// Me godoc
+//
+// @Summary      Profil user yang sedang login
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  model.WebResponse{data=model.Profile}
+// @Failure      401  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /auth/me [get]
 func (s *AuthService) Me(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -184,9 +240,9 @@ func (s *AuthService) Me(c *fiber.Ctx) error {
 		return helper.Unauthorized("user tidak ditemukan")
 	}
 
-	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", fiber.Map{
-		"user":        user,
-		"permissions": s.perms.PermissionsOf(user.Role),
+	return helper.Success(c, fiber.StatusOK, "profil berhasil diambil", model.Profile{
+		User:        user,
+		Permissions: s.perms.PermissionsOf(user.Role),
 	})
 }
 
