@@ -40,6 +40,13 @@ type RefreshToken struct {
 	CreatedAt time.Time
 }
 
+// Profile adalah isi field data pada GET /auth/me. Sebelumnya response ini
+// disusun dengan fiber.Map, sehingga tidak dapat dijelaskan swag.
+type Profile struct {
+	User        User     `json:"user"`
+	Permissions []string `json:"permissions"`
+}
+
 // AuthUser adalah identitas yang dibawa access token.
 type AuthUser struct {
 	UserID   int    `json:"user_id"`
