@@ -21,7 +21,7 @@ func TestBuildMessage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error tidak diharapkan: %v", err)
 		}
-		wantSubject := "KRS: kuota pembimbing Dr. Ani Rahmawati berubah menjadi 7"
+		wantSubject := "Bimbingan: kuota pembimbing Dr. Ani Rahmawati berubah menjadi 7"
 		if msg.Subject != wantSubject {
 			t.Errorf("subject = %q, seharusnya %q", msg.Subject, wantSubject)
 		}
