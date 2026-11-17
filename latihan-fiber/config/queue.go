@@ -29,14 +29,22 @@ func RedisOpt() asynq.RedisClientOpt {
 
 // NewWorkerServer menyiapkan server Asynq — "Fiber"-nya worker.
 func NewWorkerServer(logger *slog.Logger) *asynq.Server {
-	return asynq.NewServer(RedisOpt(), asynq.Config{
+	return asynq.NewServer(RedisOpt(), workerConfig(logger))
+}
+
+// workerConfig dipisahkan dari NewWorkerServer agar dapat diperiksa test.
+// Kesalahan yang pernah terjadi: Queues diisi TaskSendNotification (jenis
+// task) alih-alih QueueNotifications (nama queue). Akibatnya worker
+// mendengarkan queue yang tidak pernah diisi relay.
+func workerConfig(logger *slog.Logger) asynq.Config {
+	return asynq.Config{
 		// Jumlah task yang dikerjakan bersamaan. Setiap task
 		// notifikasi memegang satu koneksi PostgreSQL selama email dikirim,
 		// sehingga angka ini harus lebih kecil dari DB_MAX_CONNS.
 		Concurrency: GetEnvInt("WORKER_CONCURRENCY", 5),
 		// Worker HANYA mengambil task dari queue yang disebut di sini.
 		// Nama queue harus sama persis dengan yang dipakai relay.
-		Queues: map[string]int{model.TaskSendNotification: 1},
+		Queues: map[string]int{model.QueueNotifications: 1},
 		// Delay sebelum melakukan retry. n adalah jumlah retry yang
 		// SUDAH terjadi, dimulai dari 0, sehingga delay-nya 2, 4, 6, 8, lalu
 		// 10 detik. Bawaan Asynq jauh lebih panjang (belasan detik sampai
@@ -58,7 +66,7 @@ func NewWorkerServer(logger *slog.Logger) *asynq.Server {
 		}),
 		Logger:   newAsynqLogger(logger),
 		LogLevel: asynq.WarnLevel,
-	})
+	}
 }
 
 // asynqLogger menyalurkan log internal Asynq ke slog, agar seluruh log
