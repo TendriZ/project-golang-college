@@ -46,7 +46,7 @@ services:
       # di dalam container, agar tidak bentrok dengan "go run ." di port 3000.
       - "8080:3000"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/api/v1/health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/v1/health"]
       interval: 10s
       timeout: 3s
       retries: 5
