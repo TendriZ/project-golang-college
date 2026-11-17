@@ -1,1 +1,7 @@
 .env
+.env.test
+logs/
+coverage.out
+.gotmp/
+*.exe
+*.log
