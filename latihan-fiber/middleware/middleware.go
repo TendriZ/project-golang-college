@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"errors"
 	"log/slog"
 	"strings"
 	"time"
-	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -49,7 +49,7 @@ func RequestLogger(logger *slog.Logger) fiber.Handler {
 		err := c.Next() // serahkan ke middleware/handler berikutnya
 
 		requestID, _ := c.Locals("requestid").(string)
-		
+
 		// Sejak handler mengembalikan error alih-alih menulis response sendiri,
 		// status pada c.Rnse() BELUM terisi ketika baris ini dijalankan:
 		// ErrorHandler baru berjalan setelah seluruh rangkaian middleware selesai.
