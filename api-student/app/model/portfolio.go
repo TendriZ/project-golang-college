@@ -8,14 +8,14 @@ import "time"
 // sebagai string, bukan bson.ObjectID. Package model tetap bebas dari tipe
 // milik driver — urusan menerjemahkan ke bentuk BSON adalah tugas repository.
 type Portfolio struct {
-	ID          string        `json:"id"`
-	StudentID   int           `json:"student_id"`
-	Headline    string        `json:"headline"`
-	Bio         string        `json:"bio"`
-	Projects    []Project     `json:"projects"`
+	ID           string        `json:"id"`
+	StudentID    int           `json:"student_id"`
+	Headline     string        `json:"headline"`
+	Bio          string        `json:"bio"`
+	Projects     []Project     `json:"projects"`
 	Certificates []Certificate `json:"certificates"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
 }
 
 // Project disimpan DI DALAM dokumen Portfolio (embedding), bukan di collection
@@ -31,10 +31,10 @@ type Project struct {
 
 // Certificate juga disimpan di dalam dokumen Portfolio (embedding).
 type Certificate struct {
-	ID        string    `json:"id"`
-	Nama      string    `json:"nama"`
-	Penerbit  string    `json:"penerbit"`
-	Tanggal   time.Time `json:"tanggal"`
+	ID       string    `json:"id"`
+	Nama     string    `json:"nama"`
+	Penerbit string    `json:"penerbit"`
+	Tanggal  time.Time `json:"tanggal"`
 }
 
 // CreatePortfolioRequest adalah body untuk membuat/mengganti portofolio.
