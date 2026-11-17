@@ -25,6 +25,18 @@
 ALTER TABLE notifications
     DROP CONSTRAINT IF EXISTS notifications_outbox_unique;
 
-ALTER TABLE notifications
-    ADD CONSTRAINT notifications_outbox_user_unique
-    UNIQUE (outbox_id, user_id);
+-- ADD CONSTRAINT tidak mengenal IF NOT EXISTS, padahal seluruh migration
+-- proyek ini aman dijalankan berulang (integration test menjalankannya
+-- setiap kali). Karena itu keberadaannya diperiksa lebih dulu.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'notifications_outbox_user_unique'
+          AND conrelid = 'notifications'::regclass
+    ) THEN
+        ALTER TABLE notifications
+            ADD CONSTRAINT notifications_outbox_user_unique
+            UNIQUE (outbox_id, user_id);
+    END IF;
+END $$;
