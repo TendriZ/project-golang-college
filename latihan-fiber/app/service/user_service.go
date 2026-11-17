@@ -25,6 +25,21 @@ func NewUserService(repo repository.UserRepository, perms *helper.PermissionSet)
 	return &UserService{repo: repo, perms: perms}
 }
 
+// List godoc
+//
+// @Summary      Daftar user dengan cursor pagination
+// @Description  Mendukung Content-Type application/json atau text/csv. Membutuhkan permission user:list.
+// @Tags         users
+// @Produce      json
+// @Param        limit      query     int     false  "Jumlah per halaman"
+// @Param        search     query     string  false  "Cari pada username atau email"
+// @Param        is_active  query     bool    false  "Saring status aktif"
+// @Param        cursor     query     string  false  "Cursor dari meta.next_cursor"
+// @Success      200        {object}  model.UserPage
+// @Failure      400        {object}  model.ErrorResponse
+// @Failure      403        {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users [get]
 func (s *UserService) List(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -74,6 +89,19 @@ func (s *UserService) List(c *fiber.Ctx) error {
 	return helper.SuccessCursor(c, "daftar user berhasil diambil", rows, meta)
 }
 
+// Get godoc
+//
+// @Summary   Detail satu user
+// @Description  Pemilik akun atau pemegang permission user:read:any.
+// @Tags      users
+// @Produce   json
+// @Param     id   path      int  true  "ID user"
+// @Success   200  {object}  model.WebResponse{data=model.User}
+// @Failure   400  {object}  model.ErrorResponse
+// @Failure   403  {object}  model.ErrorResponse
+// @Failure   404  {object}  model.ErrorResponse
+// @Security  BearerAuth
+// @Router    /users/{id} [get]
 func (s *UserService) Get(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -104,6 +132,20 @@ func (s *UserService) Get(c *fiber.Ctx) error {
 	return helper.Success(c, fiber.StatusOK, "user ditemukan", user)
 }
 
+// Create godoc
+//
+// @Summary      Membuat user baru (admin)
+// @Description  Membutuhkan permission user:create.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.CreateUserRequest  true  "Data user baru"
+// @Success      201   {object}  model.WebResponse{data=model.User}
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      409   {object}  model.ErrorResponse  "Username sudah dipakai"
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users [post]
 func (s *UserService) Create(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -142,6 +184,20 @@ func (s *UserService) Create(c *fiber.Ctx) error {
 	)
 }
 
+// Replace godoc
+//
+// @Summary   Mengganti seluruh isi user
+// @Tags      users
+// @Accept    json
+// @Produce   json
+// @Param     id    path      int                       true  "ID user"
+// @Param     body  body      model.ReplaceUserRequest  true  "Isi user yang baru"
+// @Success   200   {object}  model.WebResponse{data=model.User}
+// @Failure   403   {object}  model.ErrorResponse
+// @Failure   404   {object}  model.ErrorResponse
+// @Failure   422   {object}  model.ErrorResponse
+// @Security  BearerAuth
+// @Router    /users/{id} [put]
 func (s *UserService) Replace(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -192,6 +248,20 @@ func (s *UserService) Replace(c *fiber.Ctx) error {
 	)
 }
 
+// Patch godoc
+//
+// @Summary   Mengubah sebagian field user
+// @Tags      users
+// @Accept    json
+// @Produce   json
+// @Param     id    path      int                     true  "ID user"
+// @Param     body  body      model.PatchUserRequest  true  "Field yang diubah"
+// @Success   200   {object}  model.WebResponse{data=model.User}
+// @Failure   403   {object}  model.ErrorResponse
+// @Failure   404   {object}  model.ErrorResponse
+// @Failure   422   {object}  model.ErrorResponse
+// @Security  BearerAuth
+// @Router    /users/{id} [patch]
 func (s *UserService) Patch(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -253,6 +323,21 @@ func (s *UserService) Patch(c *fiber.Ctx) error {
 
 // ---------- PATCH /users/:id/role ----------
 // Dijaga middleware dengan permission role:assign.
+// AssignRole godoc
+//
+// @Summary      Mengubah role user (admin)
+// @Description  Membutuhkan permission role:assign.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "ID user"
+// @Param        body  body      model.AssignRoleRequest  true  "Role baru"
+// @Success      200   {object}  model.WebResponse{data=model.User}
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/role [patch]
 func (s *UserService) AssignRole(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
@@ -286,6 +371,17 @@ func (s *UserService) AssignRole(c *fiber.Ctx) error {
 	return helper.Success(c, fiber.StatusOK, "role user berhasil diubah", result)
 }
 
+// Delete godoc
+//
+// @Summary      Menghapus user (admin)
+// @Description  Membutuhkan permission user:delete. Tidak boleh menghapus akun sendiri.
+// @Tags         users
+// @Param        id   path  int  true  "ID user"
+// @Success      204  "Berhasil dihapus; tanpa body"
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      404  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id} [delete]
 func (s *UserService) Delete(c *fiber.Ctx) error {
 	ctx, cancel := helper.RequestContext(c)
 	defer cancel()
