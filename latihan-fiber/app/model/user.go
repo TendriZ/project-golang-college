@@ -15,14 +15,14 @@ type User struct {
 // POST - semua field wajib katanya
 type CreateUserRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30,alphanum"`
-	Email string `json:"email" validate:"required,email,max=120"`
+	Email    string `json:"email" validate:"required,email,max=120"`
 	Password string `json:"password" validate:"required,min=8,max=72,nospace"`
 }
 
 // PUT - ganti seluruh isi, jadi field bertipe biasa dan semuanya wajib
 type ReplaceUserRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30,alphanum"`
-	Email string `json:"email" validate:"required,email,max=120"`
+	Email    string `json:"email" validate:"required,email,max=120"`
 	IsActive bool   `json:"is_active"`
 }
 
@@ -30,8 +30,8 @@ type ReplaceUserRequest struct {
 // antara "tidak dikirim" (nil) dan "dikirim bernilai kosong"
 type PatchUserRequest struct {
 	Username *string `json:"username,omitempty" validate:"omitnil,min=3,max=30,alphanum"`
- 	Email *string `json:"email,omitempty" validate:"omitnil,email,max=120"`
- 	IsActive *bool `json:"is_active,omitempty"`
+	Email    *string `json:"email,omitempty" validate:"omitnil,email,max=120"`
+	IsActive *bool   `json:"is_active,omitempty"`
 }
 
 // Amplop baku untuk semua respons
@@ -65,11 +65,11 @@ type AssignRoleRequest struct {
 }
 
 type ErrorResponse struct {
-	Success bool `json:"success"`
-	Code string `json:"code"`
-	Message string `json:"message"`
-	Fields map[string]string `json:"fields,omitempty"`
-	RequestID string `json:"request_id,omitempty"`
+	Success   bool              `json:"success"`
+	Code      string            `json:"code"`
+	Message   string            `json:"message"`
+	Fields    map[string]string `json:"fields,omitempty"`
+	RequestID string            `json:"request_id,omitempty"`
 }
 
 // CursorMeta menggantikan Meta pada endpoint yang memakai cursor.
@@ -78,21 +78,30 @@ type ErrorResponse struct {
 // disediakan tanpa COUNT(*) atas seluruh tabel — persis biaya yang ingin
 // dihindari oleh pagination berbasis cursor.
 type CursorMeta struct {
-	Limit int `json:"limit"`
+	Limit      int    `json:"limit"`
 	NextCursor string `json:"next_cursor,omitempty"`
-	HasMore bool `json:"has_more"`
+	HasMore    bool   `json:"has_more"`
 }
 
 type CursorQuery struct {
-	Limit int
-	Search string
+	Limit    int
+	Search   string
 	IsActive *bool
-	After *Cursor
+	After    *Cursor
 }
 
 type Cursor struct {
 	CreatedAt time.Time `json:"created_at"`
-	ID int `json:"id"`
+	ID        int       `json:"id"`
+}
+
+// UserPage adalah response GET /users yang memakai cursor pagination.
+// Bentuknya diberi nama agar swag dapat menjelaskannya.
+type UserPage struct {
+	Success bool       `json:"success"`
+	Message string     `json:"message"`
+	Data    []User     `json:"data"`
+	Meta    CursorMeta `json:"meta"`
 }
 
 // Offset menghitung berapa baris yang dilewati untuk halaman ini.
@@ -100,4 +109,3 @@ type Cursor struct {
 func (q ListQuery) Offset() int {
 	return (q.Page - 1) * q.Limit
 }
-
