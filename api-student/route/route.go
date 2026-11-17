@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
@@ -23,9 +24,19 @@ type Dependencies struct {
 	AuthService         *service.AuthService
 	PortfolioService    *service.PortfolioService
 	NotificationService *service.NotificationService
+
+	// EnableSwagger menyalakan Swagger UI di /swagger. Di production
+	// sebaiknya dimatikan: dokumentasi lengkap adalah peta gratis bagi
+	// penyerang.
+	EnableSwagger bool
 }
 
 func Register(app *fiber.App, deps Dependencies) {
+	if deps.EnableSwagger {
+		// Swagger UI: http://localhost:3000/swagger/index.html
+		app.Get("/swagger/*", swagger.HandlerDefault)
+	}
+
 	api := app.Group("/api/v1")
 
 	// Publik — tetap tanpa token (Tugas 3: /health tetap publik)
@@ -117,6 +128,16 @@ func Register(app *fiber.App, deps Dependencies) {
 
 // healthCheck kini memeriksa DUA database. Aplikasi dianggap sehat hanya
 // bila keduanya dapat dihubungi, dan pesan kegagalannya menyebut yang mana.
+//
+// # Health godoc
+//
+// @Summary      Status server dan database
+// @Description  Memeriksa PostgreSQL dan MongoDB. Endpoint ini publik.
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  model.WebResponse
+// @Failure      503  {object}  model.ErrorResponse  "Salah satu database tidak dapat dihubungi"
+// @Router       /health [get]
 func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
