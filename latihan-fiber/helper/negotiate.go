@@ -32,7 +32,7 @@ func Negotiate(c *fiber.Ctx, offered ...string) (string, error) {
 
 	if chosen == "" {
 		return "", NotAcceptable(
-			"format yang diminta tidak tersedia, pilih salah satu dari: "+
+			"format yang diminta tidak tersedia, pilih salah satu dari: " +
 				strings.Join(offered, ", "),
 		)
 	}
