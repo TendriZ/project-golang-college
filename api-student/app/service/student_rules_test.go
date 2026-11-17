@@ -28,16 +28,51 @@ func TestValidateReplace(t *testing.T) {
 func TestApplyPatch(t *testing.T) {
 	initial := model.Student{ID: 1, NIM: 220001, Name: "Sari", Grade: 90, IsActive: true}
 
-	newGrade := 95.0
+	t.Run("hanya grade", func(t *testing.T) {
+		// ApplyPatch kini hanya menggabungkan, tanpa validasi.
+		newGrade := 95.0
+		result := ApplyPatch(initial, model.PatchStudentRequest{Grade: &newGrade})
+		if result.Grade != 95.0 {
+			t.Errorf("grade seharusnya berubah menjadi 95.0, dapat %f", result.Grade)
+		}
+		if result.Name != "Sari" {
+			t.Error("field name yang tidak dikirim seharusnya tidak berubah")
+		}
+	})
 
-	// ApplyPatch kini hanya menggabungkan, tanpa validasi.
-	result := ApplyPatch(initial, model.PatchStudentRequest{Grade: &newGrade})
-	if result.Grade != 95.0 {
-		t.Errorf("grade seharusnya berubah menjadi 95.0, dapat %f", result.Grade)
-	}
-	if result.Name != "Sari" {
-		t.Error("field name yang tidak dikirim seharusnya tidak berubah")
-	}
+	t.Run("semua field", func(t *testing.T) {
+		name := "  Budi  "
+		nim := 220002
+		grade := 80.0
+		active := false
+
+		result := ApplyPatch(initial, model.PatchStudentRequest{
+			Name: &name, NIM: &nim, Grade: &grade, IsActive: &active,
+		})
+
+		// Name di-trim; spasi di tepi tidak ikut tersimpan.
+		if result.Name != "Budi" {
+			t.Errorf("name = %q, seharusnya %q", result.Name, "Budi")
+		}
+		if result.NIM != nim {
+			t.Errorf("nim = %d, seharusnya %d", result.NIM, nim)
+		}
+		if result.Grade != grade {
+			t.Errorf("grade = %f, seharusnya %f", result.Grade, grade)
+		}
+		if result.IsActive {
+			t.Error("is_active seharusnya berubah menjadi false")
+		}
+	})
+
+	t.Run("patch kosong tidak mengubah apa pun", func(t *testing.T) {
+		if !IsEmptyPatch(model.PatchStudentRequest{}) {
+			t.Error("IsEmptyPatch(body kosong) seharusnya true")
+		}
+		if IsEmptyPatch(model.PatchStudentRequest{NIM: new(int)}) {
+			t.Error("IsEmptyPatch dengan satu field seharusnya false")
+		}
+	})
 }
 
 func TestPatchValidation(t *testing.T) {
