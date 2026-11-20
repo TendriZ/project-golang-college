@@ -107,3 +107,12 @@ type Cursor struct {
 	CreatedAt time.Time `json:"created_at"`
 	ID        int       `json:"id"`
 }
+
+// StudentPage adalah response GET /students yang memakai cursor pagination.
+// Bentuknya diberi nama agar swag dapat menjelaskannya, bukan "object".
+type StudentPage struct {
+	Success bool       `json:"success"`
+	Message string     `json:"message"`
+	Data    []Student  `json:"data"`
+	Meta    CursorMeta `json:"meta"`
+}

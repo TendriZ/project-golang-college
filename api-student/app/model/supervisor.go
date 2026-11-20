@@ -51,3 +51,17 @@ type UpdateSupervisorQuotaRequest struct {
 	Quota   int `json:"quota" validate:"required,min=1"`
 	Version int `json:"version" validate:"required,min=1"`
 }
+
+// AssignSupervisionResponse adalah isi field data POST /supervisors/{id}/assign.
+// Diberi nama agar bentuknya dapat didokumentasikan dengan jujur.
+type AssignSupervisionResponse struct {
+	StudentID  int        `json:"student_id"`
+	Supervisor Supervisor `json:"supervisor"`
+}
+
+// SwitchSupervisionResponse adalah isi field data POST /supervisions/switch.
+type SwitchSupervisionResponse struct {
+	StudentID            int        `json:"student_id"`
+	PreviousSupervisorID int        `json:"previous_supervisor_id"`
+	Supervisor           Supervisor `json:"supervisor"`
+}

@@ -79,7 +79,7 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 		// WithTx, Claim membuka transaction sendiri dan langsung commit:
 		// bila pengiriman email lalu gagal, claim tetap tersimpan dan
 		// attempt berikutnya mengira email sudah terkirim.
-		claimed, err := w.notifications.Claim(ctx, model.Notification{
+		claimed, err := w.notifications.WithTx(tx).Claim(ctx, model.Notification{
 			OutboxID: job.OutboxID, UserID: user.ID, Channel: "email",
 			Subject: msg.Subject, Body: msg.Body,
 		})

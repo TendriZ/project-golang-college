@@ -1,43 +1,35 @@
 package service
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 )
 
 func TestNormalizeTags(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
 		name string
 		in   []string
 		want []string
 	}{
-		{
-			name: "huruf kecil, trim, dan duplikat dibuang",
-			in:   []string{"Tugas-Banyak", " dosen-jelas ", "tugas-banyak"},
-			want: []string{"tugas-banyak", "dosen-jelas"},
-		},
-		{
-			name: "string kosong dibuang",
-			in:   []string{"", "  ", "Praktikal"},
-			want: []string{"praktikal"},
-		},
-		{
-			name: "urutan pertama dipertahankan",
-			in:   []string{"seru", "data", "Seru"},
-			want: []string{"seru", "data"},
-		},
-		{
-			name: "slice kosong menghasilkan slice kosong bukan nil",
-			in:   nil,
-			want: []string{},
-		},
+		{name: "huruf besar dan spasi di tepi", in: []string{" Tugas-Banyak ", "SANTAI"}, want: []string{"tugas-banyak", "santai"}},
+		{name: "duplikat setelah normalisasi", in: []string{"Seru", "seru", " SERU"}, want: []string{"seru"}},
+		{name: "string kosong dibuang", in: []string{"", "   ", "praktis"}, want: []string{"praktis"}},
+		{name: "urutan kemunculan pertama dipertahankan", in: []string{"b", "a", "B"}, want: []string{"b", "a"}},
+		{name: "input kosong", in: []string{}, want: []string{}},
+		{name: "input nil", in: nil, want: []string{}},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := NormalizeTags(tc.in)
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("NormalizeTags(%v) = %#v, harap %#v", tc.in, got, tc.want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeTags(tt.in)
+			// slices.Equal membandingkan isi dan urutan. Operator == tidak
+			// dapat dipakai untuk slice di Go.
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("NormalizeTags(%q) = %q, seharusnya %q", tt.in, got, tt.want)
+			}
+			// Hasil tidak boleh nil: response JSON harus berisi [] bukan null.
+			if got == nil {
+				t.Errorf("NormalizeTags(%q) mengembalikan nil", tt.in)
 			}
 		})
 	}

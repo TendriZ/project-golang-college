@@ -4,7 +4,7 @@ import "time"
 
 type RegisterRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30,username"`
-	Email string `json:"email" validate:"required,email,max=120"`
+	Email    string `json:"email" validate:"required,email,max=120"`
 	Password string `json:"password" validate:"required,max=72,strongpassword"`
 
 	// Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
@@ -35,6 +35,13 @@ type RefreshToken struct {
 	CreatedAt time.Time
 }
 
+// Profile adalah isi field data pada GET /auth/me. Sebelumnya response ini
+// disusun dengan fiber.Map, sehingga tidak dapat dijelaskan swag.
+type Profile struct {
+	User        User     `json:"user"`
+	Permissions []string `json:"permissions"`
+}
+
 // AuthUser adalah identitas yang dibawa access token.
 // Isinya sengaja minimal: hanya yang benar-benar diperlukan middleware.
 type AuthUser struct {
@@ -42,6 +49,3 @@ type AuthUser struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
 }
-
-
-

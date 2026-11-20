@@ -17,8 +17,8 @@ import (
 // Sentinel error khusus portofolio. ErrNotFound dan ErrDuplicate dipakai ulang
 // dari paket induk agar service hanya mengenal satu keluarga error.
 var (
-	ErrInvalidID   = errors.New("format id tidak valid")
-	ErrNotOwner    = errors.New("bukan pemilik data")
+	ErrInvalidID    = errors.New("format id tidak valid")
+	ErrNotOwner     = errors.New("bukan pemilik data")
 	ErrProjectLimit = errors.New("jumlah proyek sudah mencapai batas")
 )
 
@@ -44,14 +44,14 @@ type PortfolioRepository interface {
 // struct ini tidak pernah dikirim ke client. Pemisahan ini membuat package
 // model tetap bebas dari tipe-tipe milik driver.
 type portfolioDocument struct {
-	ID          bson.ObjectID    `bson:"_id,omitempty"`
-	StudentID   int              `bson:"student_id"`
-	Headline    string           `bson:"headline"`
-	Bio         string           `bson:"bio"`
-	Projects    []projectDocument `bson:"projects"`
+	ID           bson.ObjectID         `bson:"_id,omitempty"`
+	StudentID    int                   `bson:"student_id"`
+	Headline     string                `bson:"headline"`
+	Bio          string                `bson:"bio"`
+	Projects     []projectDocument     `bson:"projects"`
 	Certificates []certificateDocument `bson:"certificates"`
-	CreatedAt   time.Time        `bson:"created_at"`
-	UpdatedAt   time.Time        `bson:"updated_at"`
+	CreatedAt    time.Time             `bson:"created_at"`
+	UpdatedAt    time.Time             `bson:"updated_at"`
 }
 
 type projectDocument struct {
@@ -63,10 +63,10 @@ type projectDocument struct {
 }
 
 type certificateDocument struct {
-	ID        bson.ObjectID `bson:"_id"`
-	Nama      string        `bson:"nama"`
-	Penerbit  string        `bson:"penerbit"`
-	Tanggal   time.Time     `bson:"tanggal"`
+	ID       bson.ObjectID `bson:"_id"`
+	Nama     string        `bson:"nama"`
+	Penerbit string        `bson:"penerbit"`
+	Tanggal  time.Time     `bson:"tanggal"`
 }
 
 func (d portfolioDocument) toModel() model.Portfolio {
@@ -84,22 +84,22 @@ func (d portfolioDocument) toModel() model.Portfolio {
 	certificates := make([]model.Certificate, 0, len(d.Certificates))
 	for _, c := range d.Certificates {
 		certificates = append(certificates, model.Certificate{
-			ID:        c.ID.Hex(),
-			Nama:      c.Nama,
-			Penerbit:  c.Penerbit,
-			Tanggal:   c.Tanggal,
+			ID:       c.ID.Hex(),
+			Nama:     c.Nama,
+			Penerbit: c.Penerbit,
+			Tanggal:  c.Tanggal,
 		})
 	}
 
 	return model.Portfolio{
-		ID:          d.ID.Hex(),
-		StudentID:   d.StudentID,
-		Headline:    d.Headline,
-		Bio:         d.Bio,
-		Projects:    projects,
+		ID:           d.ID.Hex(),
+		StudentID:    d.StudentID,
+		Headline:     d.Headline,
+		Bio:          d.Bio,
+		Projects:     projects,
 		Certificates: certificates,
-		CreatedAt:   d.CreatedAt,
-		UpdatedAt:   d.UpdatedAt,
+		CreatedAt:    d.CreatedAt,
+		UpdatedAt:    d.UpdatedAt,
 	}
 }
 
@@ -170,13 +170,13 @@ func (r *portfolioMongoRepository) Upsert(
 ) (model.Portfolio, error) {
 	t := now()
 	doc := portfolioDocument{
-		StudentID:   p.StudentID,
-		Headline:    p.Headline,
-		Bio:         p.Bio,
-		Projects:    []projectDocument{},
+		StudentID:    p.StudentID,
+		Headline:     p.Headline,
+		Bio:          p.Bio,
+		Projects:     []projectDocument{},
 		Certificates: []certificateDocument{},
-		CreatedAt:   t,
-		UpdatedAt:   t,
+		CreatedAt:    t,
+		UpdatedAt:    t,
 	}
 	if doc.Projects == nil {
 		doc.Projects = []projectDocument{}
@@ -188,11 +188,11 @@ func (r *portfolioMongoRepository) Upsert(
 	filter := bson.M{"student_id": p.StudentID}
 	update := bson.M{
 		"$set": bson.M{
-			"headline":    p.Headline,
-			"bio":         p.Bio,
-			"projects":    doc.Projects,
+			"headline":     p.Headline,
+			"bio":          p.Bio,
+			"projects":     doc.Projects,
 			"certificates": doc.Certificates,
-			"updated_at":  t,
+			"updated_at":   t,
 		},
 		"$setOnInsert": bson.M{
 			"created_at": t,
@@ -218,12 +218,12 @@ func (r *portfolioMongoRepository) Replace(
 ) (model.Portfolio, error) {
 	t := now()
 	doc := portfolioDocument{
-		StudentID:   studentID,
-		Headline:    p.Headline,
-		Bio:         p.Bio,
-		Projects:    []projectDocument{},
+		StudentID:    studentID,
+		Headline:     p.Headline,
+		Bio:          p.Bio,
+		Projects:     []projectDocument{},
 		Certificates: []certificateDocument{},
-		UpdatedAt:   t,
+		UpdatedAt:    t,
 	}
 	if doc.Projects == nil {
 		doc.Projects = []projectDocument{}
@@ -236,11 +236,11 @@ func (r *portfolioMongoRepository) Replace(
 	err := r.coll.FindOneAndUpdate(ctx,
 		bson.M{"student_id": studentID},
 		bson.M{"$set": bson.M{
-			"headline":    p.Headline,
-			"bio":         p.Bio,
-			"projects":    doc.Projects,
+			"headline":     p.Headline,
+			"bio":          p.Bio,
+			"projects":     doc.Projects,
 			"certificates": doc.Certificates,
-			"updated_at":  t,
+			"updated_at":   t,
 		}},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
 	).Decode(&updated)
@@ -364,8 +364,8 @@ func (r *portfolioMongoRepository) StatsTechnologies(
 	defer cursor.Close(ctx)
 
 	var out []struct {
-		ID     string `bson:"_id"`
-		Total  int    `bson:"total"`
+		ID    string `bson:"_id"`
+		Total int    `bson:"total"`
 	}
 	if err := cursor.All(ctx, &out); err != nil {
 		return model.PortfolioStats{}, fmt.Errorf("membaca statistik teknologi: %w", err)

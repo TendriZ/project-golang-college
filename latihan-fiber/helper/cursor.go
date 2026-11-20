@@ -1,13 +1,13 @@
 package helper
 
 import (
-    "encoding/base64"
-    "strconv"
-    "strings"
-    "time"
+	"encoding/base64"
 	"errors"
+	"strconv"
+	"strings"
+	"time"
 
-    "latihan-fiber/app/model"
+	"latihan-fiber/app/model"
 )
 
 var ErrInvalidCursor = errors.New("cursor tidak valid")

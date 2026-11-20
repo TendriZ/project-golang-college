@@ -56,7 +56,7 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 	}
 	msg, err := BuildMessage(job.EventType, job.Event, job.Recipient)
 	if err != nil {
-		return fmt.Errorf("%v: %w", asynq.SkipRetry, err)
+		return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
 	}
 
 	alreadySent := false
@@ -92,7 +92,7 @@ func (w *NotificationWorker) HandleSend(ctx context.Context, t *asynq.Task) erro
 		// SkipRetry harus dibungkus dengan %w agar errors.Is di Asynq
 		// mendeteksinya: kegagalan permanen langsung masuk archived,
 		// tidak dibuang-buang waktu untuk 6 kali percobaan.
-		return fmt.Errorf("%v: %w", asynq.SkipRetry, err)
+		return fmt.Errorf("%w: %v", asynq.SkipRetry, err)
 	}
 	if err != nil {
 		return err

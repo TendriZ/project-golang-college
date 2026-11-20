@@ -23,7 +23,7 @@ func RequirePermission(perms *helper.PermissionSet, permission string) fiber.Han
 		}
 		if !perms.Can(user.Role, permission) {
 			return helper.Forbidden(
-				"role "+user.Role+" tidak memiliki hak "+permission)
+				"role " + user.Role + " tidak memiliki hak " + permission)
 		}
 		return c.Next()
 	}
